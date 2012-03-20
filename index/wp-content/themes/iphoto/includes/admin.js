@@ -1,0 +1,1 @@
+﻿jQuery(document).ready(function(a){a("#theme-menu span").click(function(){var c=a("#theme-menu span").index(a(this)),b=a("#theme-content ul li");if(b.eq(c).is(":visible")){return false}else{a("#theme-menu span").removeClass("current");a(this).addClass("current");b.slideUp(500);b.eq(c).slideDown(500)}});a("#theme-menu span").eq(0).click()});

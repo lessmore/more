@@ -1,0 +1,881 @@
+/*---------------------------------------------------------
+
+	Stylesheet Overview
+
+------------------------------------------------------------
+
+	----- Table of Contents -----
+
+	1.  Reset
+	2.  Body and links
+	3.  Basic Structure
+	4.  Header
+	5.  Alert box and menu area
+	6.  Post styling
+	7.  Pages, page templates, archives
+	8.  Sidebar
+	9.  Comments
+	10. Default floats and image styling
+	11. Footer
+
+	----- Font / line-height sizing -----
+
+	Base font-size is 62.5% = 10px
+	1.2em = 12px
+
+	----- IMPORTANT NOTE -----
+
+	DO NOT make edits to this file, your edits will vanish
+	when you upgrade the theme. Instead add your custom CSS to
+	the style.css file in the pro child theme. Any new styles
+	you add there will automatically override this imported
+	stylesheet. This will also make your life a whole lot
+	easier when it comes time to upgrade the theme.
+*/
+
+/*---------------------------------------------------------
+	1. Reset
+------------------------------------------------------------ */
+html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, font, img, ins, kbd, q, s, samp, small, strike, strong, sub, sup, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td { margin: 0; padding: 0; border: 0; outline: 0; font-size: 100%; vertical-align: baseline; background: transparent; }
+body { line-height: 1; }
+ol, ul { list-style: none; }
+blockquote, q { quotes: none; }
+table { border-collapse: collapse; border-spacing: 0; }
+
+/*---------------------------------------------------------
+	2. Body and links
+------------------------------------------------------------ */
+body {
+	font-size: 62.5%;
+	font-family: Georgia, "Times New Roman", Times, Serif;
+	line-height: 2.2em;
+	color: #333;
+	background-color: #fff;
+}
+a:link,
+a:visited {
+  text-decoration: none;
+  color: #772124;
+}
+a:hover {
+	text-decoration: underline;
+	color: #58181b;
+}
+
+/*---------------------------------------------------------
+	3. Basic Structure
+------------------------------------------------------------ */
+#wrapper {
+	width: 930px;
+	margin: 0 auto;
+	text-align: left;
+}
+#content {
+	float: left;
+	width: 600px;
+	padding: 20px 30px 20px 0;
+}
+#sidebar {
+	float: right;
+	width: 300px;
+	padding-bottom: 20px;
+}
+.thin-sidebar {
+	float: left;
+	width: 140px;
+}
+.spad {
+	padding-right: 20px;
+}
+#footer {
+	clear: both;
+	padding-top: 5px;
+	border-top: 1px solid #eee;
+}
+.clear:after,
+li.comment:after {
+	content: ".";
+	display: block;
+	height: 0;
+	clear: both;
+	visibility: hidden;
+}
+div.skip-content {
+	display: none;
+}
+
+/*---------------------------------------------------------
+	4. Header
+------------------------------------------------------------ */
+#header {
+	padding: 20px 0 0 0;
+	border-bottom: 5px solid #333;
+}
+h1#title,
+div#title {
+	font-size: 4.6em;
+	font-weight: bold;
+	line-height: 1.3em;
+}
+div#title-logo {
+	padding-bottom: 10px;
+}
+#title a {
+	color: #444;
+}
+#title a:hover {
+	color: #772124;
+	text-decoration: none;
+}
+
+/*Description
+---------------------------------------*/
+#description {
+	float: left;
+}
+#description h2 {
+	font-size: 1.2em;
+	font-weight: normal;
+	color: #666;
+}
+
+/*Nav
+---------------------------------------*/
+#navigation {
+	float: right;
+}
+.nav a {
+	display: block;
+	padding: 0 0 10px 10px;
+	font-size: 1.4em;
+	font-family: "Trebuchet MS", "Lucida Grande", "Lucida Sans", Verdana, Arial, sans-serif;
+	text-decoration: none;
+	color: #555;
+}
+.nav .current-menu-parent a,
+.nav .current-menu-ancestor a,
+.nav .current-menu-item a {
+	color: #222;
+}
+.nav .current-menu-parent li a,
+.nav .current-menu-ancestor li a  {
+	color: #555;
+}
+.nav a:hover,
+.nav li.sfhover a  {
+	color: #222;
+}
+.nav li {
+	float: left;
+	margin: 0 0 0 10px;
+}
+.nav ul {
+	position: absolute;
+	left: -999em;
+	height: auto;
+	width: 200px;
+	font-weight: normal;
+	z-index: 99999;
+}
+.nav ul a, .nav li a {
+	position: relative;
+}
+.nav ul a {
+	font-weight: normal;
+	color: #555;
+	font-size: 1.2em;
+}
+.nav li li {
+	width: 200px;
+	background: #f9f9f9;
+}
+.nav li li a {
+	margin: 0;
+	padding: 10px 10px 10px 20px;
+	width: 170px;
+	line-height: 20px;
+}
+.nav li ul ul {
+	margin: -40px 0 0 190px;
+}
+.nav li:hover ul ul,
+.nav li:hover ul ul ul,
+.nav li:hover ul ul ul ul,
+.nav li.sfhover ul ul,
+.nav li.sfhover ul ul ul,
+.nav li.sfhover ul ul ul ul {
+	left: -999em;
+}
+.nav li:hover ul,
+.nav li li:hover ul,
+.nav li li li:hover ul,
+.nav li li li li:hover ul,
+.nav li.sfhover ul,
+.nav li li.sfhover ul,
+.nav li li li.sfhover ul,
+.nav li li li li.sfhover ul {
+	left: auto;
+}
+.nav li li:hover,
+.nav li li.sfhover,
+.nav li li.current-menu-item,
+.nav li li.current_page_parent,
+.nav li li.current_page_ancestor,
+.nav li li.current-cat-parent,
+.nav li li.current-cat,
+.nav li li.current_page_item {
+	background: #efefef;
+}
+/*Nav Arrows
+--------------------*/
+.nav a.sf-with-ul {
+	padding-right: 20px;
+	min-width: 1px; /* trigger IE7 hasLayout so spans position accurately */
+}
+.sf-sub-indicator {
+	position: absolute;
+	display: block;
+	right: 0;
+	bottom: 15px; /* IE6 only */
+	width: 10px;
+	height: 10px;
+	text-indent: -999em;
+	overflow: hidden;
+	background: url(../images/nav-arrows.png) no-repeat -10px -100px; /* 8-bit indexed alpha png. IE6 gets solid image only */
+}
+a > .sf-sub-indicator { /* give all except IE6 the correct values */
+	bottom: 15px;
+	background-position: 0 -100px;
+}
+/* apply hovers to modern browsers */
+a:focus > .sf-sub-indicator,
+a:hover > .sf-sub-indicator,
+a:active > .sf-sub-indicator,
+li:hover > a > .sf-sub-indicator,
+li.sfHover > a > .sf-sub-indicator {
+	background-position: -10px -100px;
+}
+/* point right for anchors in subs */
+.nav ul .sf-sub-indicator {
+	background-position: -10px 0;
+	right: 32px;
+	top: 14px;
+}
+.nav ul a > .sf-sub-indicator {
+	background-position: 0 0;
+}
+/* apply hovers to modern browsers */
+.nav ul a:focus > .sf-sub-indicator,
+.nav ul a:hover > .sf-sub-indicator,
+.nav ul a:active > .sf-sub-indicator,
+.nav ul li:hover > a > .sf-sub-indicator,
+.nav ul li.sfHover > a > .sf-sub-indicator {
+	background-position: -10px 0;
+}
+
+/*---------------------------------------------------------
+	5. Alert box and menu area
+------------------------------------------------------------ */
+
+/*---------------------------------------------------------
+	6. Post styling
+------------------------------------------------------------ */
+
+/*Post Header
+---------------------------------------*/
+.post-header {
+	border-bottom: 4px double #eee;
+	padding-bottom: 7px;
+}
+.post-header h1, .post-header h2 {
+	font-size: 2.6em;
+	line-height: 1.1em;
+	font-weight: normal;
+}
+.post-header h1 a,
+.post-header h2 a {
+	color: #444;
+}
+.post-header h1 a:hover,
+.post-header h2 a:hover {
+	color: #772124;
+}
+.comments {
+	padding-top: 10px;
+	font-size: 1.3em;
+	color: #757575;
+	text-transform: uppercase;
+}
+.comments a {
+	display: block;
+	color: #757575;
+	padding: 0 0 0 25px;
+	background: url(../images/comments-bubble.gif) no-repeat 0 4px;
+}
+.comments a:hover {
+	color: #772124;
+	background-position: 0 -24px;
+}
+.post .date {
+	float: right;
+	padding-top: 10px;
+	color: #757575;
+	font-size: 1.6em;
+	font-weight: normal;
+	font-family: "Trebuchet MS", "Lucida Grande", "Lucida Sans", Verdana, Arial, sans-serif;
+	text-transform: uppercase;
+}
+.post .date span {
+	color: #ddd;
+	font-weight: bold;
+}
+#single-date {
+	float: none;
+}
+
+/*Post Meta
+---------------------------------------*/
+.meta {
+	margin: 10px 0 20px 0;
+	font-size: 1.2em;
+	color: #666;
+}
+.meta a {
+	color: #666;
+	font-style: normal;
+}
+.meta a:hover {
+	color: #772124;
+}
+.tags {
+	float: right;
+	width: 400px;
+	text-align: right;
+	font-style: italic;
+}
+
+/*Post Body
+---------------------------------------*/
+.entry a,
+.alert-box a {
+	text-decoration: underline;
+}
+.entry a:hover,
+.alert-box a:hover {
+	text-decoration: none;
+}
+.entry {
+	font-size: 1.3em;
+}
+.entry p {
+	margin-bottom: 10px;
+}
+.entry p.notice {
+	padding: 15px;
+	background-color: #fffbcc;
+	border: 1px solid #f8f4c7;
+}
+.alert-box p {
+	margin: 10px 0 0 0;
+}
+.entry h2,
+.entry h3,
+.entry h4 {
+	font-size: 1.3em;
+	padding: 15px 0 5px 0;
+}
+.entry h3 {
+	padding-top: 10px;
+	font-size: 1em;
+}
+.entry h4 {
+	padding-top: 10px;
+	font-size: .9em;
+}
+.alert-box h2,
+.alert-box h3,
+.alert-box h4 {
+	margin: 0;
+	padding: 0;
+}
+pre {
+	margin: 10px 0;
+	padding: 1em 10px;
+	overflow: auto;
+	background-color: #f3f3f3;
+	color: #000;
+}
+code {
+	padding: 2px 3px;
+	font: 1.1em Consolas, Courier New, sans-serif;
+	color: #000;
+	background-color: #f3f3f3;
+}
+pre code {
+	font-size: 1.3em;
+}
+blockquote {
+	clear: both;
+	display: block;
+	padding: 20px 20px 10px 45px;
+	margin: 20px 0;
+	font-style: italic;
+	font-size: 1.2em;
+	color: #141310;
+	background: #e7e6e2 url(../images/blockquote.gif) no-repeat top left;
+}
+.entry ul,
+.c-body ul {
+	margin: 0 0 10px 10px;
+}
+.entry ul li,
+.c-body ul li {
+	display: block;
+	margin: 5px 0 0 0;
+	padding: 0 0 0 17px;
+	background: url(../images/list-star.gif) no-repeat 0 .3em;
+}
+.entry ol,
+.c-body ol {
+	margin: 0 0 15px 30px;
+}
+.entry ol li ol li,
+.c-body ol li ol li {
+	font-size: .9em;
+	list-style-type: lower-roman;
+}
+.entry ol li,
+.c-body ol li {
+	margin: 10px 0 0 0;
+	list-style-type: decimal;
+	list-style-position: outside;
+}
+.navigation {
+	padding: 10px 0;
+	font-size: 1.3em;
+}
+.index {
+	padding: 0;
+}
+.float-quote {
+	float: left;
+	width: 300px;
+	padding: 15px;
+	margin: 10px 10px 0 0;
+	background: #eaeaea;
+	border-top: 4px solid #333;
+	border-bottom: 4px solid #333;
+}
+.entry .float-quote p {
+	margin: 0;
+	padding: 0 0 0 40px;
+	font-size: 1.2em;
+	font-family: "Trebuchet MS", "Lucida Grande", "Lucida Sans", Verdana, Arial, sans-serif;
+	line-height: 1.3em;
+	background: url(../images/float-quote.gif) no-repeat top left;
+}
+.highlight-box {
+	float: right;
+	margin: 0 0 10px 10px;
+	width: 200px;
+	padding: 10px;
+	font-family: "Trebuchet MS", "Lucida Grande", "Lucida Sans", Verdana, Arial, sans-serif;
+	border-top: 8px solid #000;
+	background: #772124;
+	color: #fff;
+}
+.highlight-box a {
+	color: #fff;
+	text-decoration: underline;
+}
+.highlight-box a:hover {
+	text-decoration: none;
+}
+.entry .highlight-box p {
+	margin: 10px 0;
+	line-height: 1.4em;
+	font-size: 1.1em;
+}
+.entry .highlight-box ul li {
+	font-size: 1.1em;
+	background: url(../images/list-square.gif) no-repeat 0 .4em;
+}
+.entry .highlight-box h2,
+.entry .highlight-box h3,
+.entry .highlight-box h4 {
+	margin: 0;
+	padding: 0;
+	color: #fff;
+}
+.highlight-box h2 {
+	text-transform: uppercase;
+}
+
+/*Post Footer
+---------------------------------------*/
+.post-footer {
+	padding-bottom: 2px;
+	margin: 0 0 30px 0;
+	font-size: 1.1em;
+	font-style: italic;
+	text-align: right;
+	color: #666;
+	border-bottom: 1px solid #eee;
+}
+.post-footer a {
+	color: #333;
+	font-style: normal;
+}
+.post-footer a:hover {
+	color: #772124;
+}
+
+/*---------------------------------------------------------
+	7. Pages, page templates, archives
+------------------------------------------------------------ */
+
+/* Pages
+---------------------------------------*/
+h1.pagetitle,
+h2.pagetitle {
+	margin-bottom: 20px;
+	padding-bottom: 7px;
+	font-size: 2.6em;
+	line-height: 1.1em;
+	border-bottom: 4px double #eee;
+}
+
+/*Archives List
+---------------------------------------*/
+img.archive-comment {
+	float: right;
+	margin: 0 .5em .5em 0;
+}
+.entries {
+	font-size: 1.3em;
+	clear: both;
+}
+.entries ul {
+	margin: 0;
+	padding: 0 0 1px 0;
+	background: transparent url(../images/archives-dotted-line.gif) repeat-x bottom left;
+}
+.entries ul li {
+	padding-top: 1px;
+	background: transparent url(../images/archives-dotted-line.gif) repeat-x top left;
+}
+.entries ul li a {
+	display: block;
+	margin: 0;
+	padding: 7px 0;
+}
+.entries ul li a:hover {
+	background-color: #F8F8F7;
+	text-decoration: none;
+}
+.entries span {
+	display: block;
+	text-align: right;
+}
+.entries span.archdate,
+.entries a:hover span.archdate {
+	float: left;
+	width: 3em;
+	margin-right: 3em;
+	padding-left: .5em;
+	color: #666;
+}
+.entries span.comments_number {
+	float: right;
+	margin-right: .5em;
+	width: 3em;
+	color: #666;
+}
+
+/*---------------------------------------------------------
+	8. Sidebar
+------------------------------------------------------------ */
+h2.widgettitle {
+	padding: 25px 0 3px 0;
+	font-size: 1.4em;
+	font-weight: normal;
+	text-transform: uppercase;
+	letter-spacing: 1.05pt;
+	font-family: "Trebuchet MS", "Lucida Grande", "Lucida Sans", Verdana, Arial, sans-serif;
+	border-bottom: 1px solid #eee;
+}
+ul li.widget ul {
+	margin: 0;
+	font-size: 1.4em;
+}
+ul li.widget ul li ul {
+	margin-left: 5px;
+	font-size: 1em;
+}
+ul li.widget ul li {
+	padding: 8px 0;
+	border-bottom: 1px solid #eee;
+}
+ul li.widget ul li ul li {
+	border-bottom: none;
+}
+ul li.widget ul li a {
+	display: block;
+	padding: 0 0 0 15px;
+	background: url(../images/list-item.gif) no-repeat 0 6px;
+}
+ul li.widget ul li a:hover {
+	background-position: 0 -136px;
+}
+ul li.widget ul#recentcomments li a {
+	padding: 0;
+	background: none;
+}
+div.textwidget p {
+	margin: 10px 0 0 0;
+	font-size: 1.3em;
+}
+li.widget select {
+	margin-top: 10px;
+}
+
+/*Search Box
+---------------------------------------*/
+#search_form input {
+	margin: 10px 0 0 0;
+}
+#search_form input {
+	padding: 4px 2px;
+	width: 132px;
+	border: 2px solid #acacac;
+	border-bottom: 1px solid #ccc;
+	border-right: 1px solid #ccc;
+	background: #f4f4f4;
+	color: #888;
+}
+#search_form input:focus {
+	background: #fff;
+}
+#search_form input#searchsubmit {
+	padding: 2px 10px;
+}
+
+/*---------------------------------------------------------
+	9. Comments
+------------------------------------------------------------ */
+
+/*Top
+---------------------------------------*/
+.comment-number {
+	display: block;
+	font-size: 1.3em;
+	padding: 0 0 10px 30px;
+	background: url(../images/comments-bubble-big.gif) no-repeat 0 .1em;
+}
+.comment-number span {
+	font-size: 1.3em;
+	color: #777;
+}
+a#leavecomment {
+	padding-left: 10px;
+}
+
+/*Body
+---------------------------------------*/
+li.comment {
+	padding: 20px 0 0 0;
+}
+#comments ul.children {
+	margin: 10px 0 0 96px;
+	clear: both;
+}
+div.c-grav {
+	float: left;
+	width: 60px;
+	margin: 0;
+	text-align: right;
+}
+div.c-grav img {
+	border: 4px solid #e3e3e3;
+	-moz-border-radius: 4px;
+	-webkit-border-radius: 4px;
+	border-radius: 4px;
+}
+div.c-body {
+	float: right;
+	width: 474px;
+	font-size: 1.3em;
+	background: #f3f3f3;
+	padding: 20px 20px 0 20px;
+	-moz-border-radius: 12px;
+	-webkit-border-radius: 12px;
+	border-radius: 12px;
+}
+ul.children div.c-body {
+	width: 378px;
+}
+div.c-body p {
+	margin: 10px 0 0 0;
+}
+div.c-head {
+	font-weight: bold;
+}
+span.asterisk {
+	float: right;
+	color: #772124;
+	font-size: 2.2em;
+}
+div.c-date {
+	color: #bbb;
+	font-size: .9em;
+	line-height: 0;
+	padding: 10px 0 5px 0;
+	font-family: "Trebuchet MS", "Lucida Grande", "Lucida Sans", Verdana, Arial, sans-serif;
+	font-weight: bold;
+}
+.c-permalink a {
+	margin-left: 5px;
+	color: #ccc;
+	font-size: .7em;
+	font-family: "Trebuchet MS", "Lucida Grande", "Lucida Sans", Verdana, Arial, sans-serif;
+	text-transform: uppercase;
+}
+div.reply {
+	float: right;
+}
+div.reply {
+	padding: 10px 0;
+}
+div.reply a {
+	color: #aaa;
+	font-size: .9em;
+	font-family: "Trebuchet MS", "Lucida Grande", "Lucida Sans", Verdana, Arial, sans-serif;
+	text-transform: uppercase;
+	border-bottom: 1px dotted;
+}
+div.reply a:hover {
+	border-bottom: 1px solid;
+	text-decoration: none;
+}
+a#cancel-comment-reply-link {
+	margin-left: 15px;
+	font-size: .8em;
+	font-style: italic;
+	font-weight: normal;
+}
+
+/*Form
+---------------------------------------*/
+form#commentform {
+	margin-bottom: 20px;
+}
+#respond {
+	font-size: 1.3em;
+}
+#reply-title {
+	margin: 20px 0;
+	padding: 0 0 5px 0;
+	font-size: 1.2em;
+	color: #555;
+	border-bottom: 1px solid #eee;
+}
+form#commentform label.comment-field {
+	display: block;
+	margin: 10px 0 5px 0;
+}
+input.text-input,
+form#commentform textarea {
+	padding: 7px;
+	background: #f8f8f8;
+	font-family: inherit;
+	border: 1px solid #e6e6e6;
+	width: 591px;
+}
+input#author,
+input#email,
+input#url {
+	width: 350px;
+}
+form#commentform input:focus,
+form#commentform textarea:focus {
+	background: #fff;
+}
+form#commentform input#submit {
+	padding: 5px;
+	width: 150px;
+}
+form#commentform p.guidelines {
+	margin: 10px 0;
+	color: #777;
+}
+p.subscribe-to-comments,
+p.comments-rss {
+	margin: 0 0 10px 0;
+}
+p.comments-rss a {
+	padding: 0 0 0 19px;
+	background: url(../images/feed-icon.png) no-repeat 0 .15em;
+}
+
+/*Note
+---------------------------------------*/
+p.note {
+	font-style: italic;
+	font-size: 1.3em;
+}
+
+/*Pingbacks/Trackbacks
+---------------------------------------*/
+h3.pinghead {
+	font-size: 1.3em;
+	color: #444444;
+}
+ol.pinglist {
+	list-style-type: decimal;
+	list-style-position: inside;
+	margin: 0 0 10px 10px;
+	font-size: 1.3em;
+}
+
+/*---------------------------------------------------------
+	10. Default floats and image styling
+------------------------------------------------------------ */
+.entry img {
+	border: 2px solid #eee;
+	max-width: 600px;
+}
+.noborder {
+	border: none;
+}
+.entry .alignright,
+.entry .alignright .float-quote {
+	margin: 0 0 10px 15px;
+}
+.entry .alignleft,
+.entry .alignleft .highlight-box {
+	margin: 0 15px 10px 0;
+}
+.wp-caption p,
+.wp-caption-text,
+.gallery-caption {
+	font-style: italic;
+	color: #888;
+}
+
+/*---------------------------------------------------------
+	11. Footer
+------------------------------------------------------------ */
+#footer {
+	color: #666;
+	font-size: 1.1em;
+}
+#footer p.right {
+	float: right;
+}
+#footer a {
+	color: #666;
+	text-decoration: underline;
+}
+#footer a:hover {
+	color: #772124;
+}

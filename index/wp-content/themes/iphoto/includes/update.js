@@ -1,0 +1,1 @@
+﻿jQuery(document).ready(function(a){a("body").append('<a id="updateNotifier" href="themes.php?page=theme-update-notifier">更新提示：主题又有新版本啦，请升级主题！</a>');a("#updateNotifier").animate({width:240},500)});
