@@ -381,7 +381,7 @@ private static function checkXML($xmlfile){
             echo "\n\n====================================>\n你将操作{$dbl['c']}条数据, 数据结构为:\n";
             echo var_export($dbr,1);
             echo "\n";
-            echo "操作的源数据在操作前会保存到文件 /var/www/html/www.mogujie.com/appbeta/logs/crond/".date('Ymd')."/".$sqlLog."\n\n";
+            echo "操作的源数据在操作前会保存到文件 /var/www/logs/crond/".date('Ymd')."/".$sqlLog."\n\n";
             echo "确认请执行: \nphp crond.php Crond_dao::call sql \"".$sql."\" $unikey";
 
         }catch(exception $e){
@@ -493,8 +493,145 @@ private static function checkXML($xmlfile){
 
 
 
+$time_start = microtime_float();
+function memory_usage() {
+    $memory  = ( ! function_exists('memory_get_usage')) ? '0' : round(memory_get_usage()/1024/1024, 2).'MB';
+    return $memory;
+}
+function microtime_float() {
+    $mtime = microtime();
+    $mtime = explode(' ', $mtime);
+    return $mtime[1] + $mtime[0];
+}
+
+function valid_email($str) {
+    return ( ! preg_match("/^([a-z0-9\+_\-]+)(\.[a-z0-9\+_\-]+)*@([a-z0-9\-]+\.)+[a-z]{2,6}$/ix", $str)) ? FALSE : TRUE;
+}
+
+// 根据不同系统取得CPU相关信息
+switch(PHP_OS) {
+    case "Linux":
+        $sysReShow = (false !== ($sysInfo = sys_linux()))?"show":"none";
+        break;
+    case "FreeBSD":
+        $sysReShow = (false !== ($sysInfo = sys_freebsd()))?"show":"none";
+        break;
+    case "WINNT":
+        $sysReShow = (false !== ($sysInfo = sys_windows()))?"show":"none";
+        break;
+    default:
+        break;
+}
+
+//linux系统探测
+function sys_linux()
+{
+    // CPU
+    if (false === ($str = @file("/proc/cpuinfo"))) return false;
+    $str = implode("", $str);
+    @preg_match_all("/model\s+name\s{0,}\:+\s{0,}([\w\s\)\(\@.-]+)([\r\n]+)/s", $str, $model);
+    @preg_match_all("/cpu\s+MHz\s{0,}\:+\s{0,}([\d\.]+)[\r\n]+/", $str, $mhz);
+    @preg_match_all("/cache\s+size\s{0,}\:+\s{0,}([\d\.]+\s{0,}[A-Z]+[\r\n]+)/", $str, $cache);
+    @preg_match_all("/bogomips\s{0,}\:+\s{0,}([\d\.]+)[\r\n]+/", $str, $bogomips);
+    if (false !== is_array($model[1]))
+        {
+        $res['cpu']['num'] = sizeof($model[1]);
+        for($i = 0; $i < $res['cpu']['num']; $i++)
+        {
+            $res['cpu']['model'][] = $model[1][$i];
+            $res['cpu']['mhz'][] = $mhz[1][$i];
+            $res['cpu']['cache'][] = $cache[1][$i];
+            $res['cpu']['bogomips'][] = $bogomips[1][$i];
+        }
+        if (false !== is_array($res['cpu']['model'])) $res['cpu']['model'] = implode("<br />", $res['cpu']['model']);
+        if (false !== is_array($res['cpu']['mhz'])) $res['cpu']['mhz'] = implode("<br />", $res['cpu']['mhz']);
+        if (false !== is_array($res['cpu']['cache'])) $res['cpu']['cache'] = implode("<br />", $res['cpu']['cache']);
+        if (false !== is_array($res['cpu']['bogomips'])) $res['cpu']['bogomips'] = implode("<br />", $res['cpu']['bogomips']);
+        }
+
+    // NETWORK
+
+    // MEMORY
+    if (false === ($str = @file("/proc/meminfo"))) return false;
+    $str = implode("", $str);
+    preg_match_all("/MemTotal\s{0,}\:+\s{0,}([\d\.]+).+?MemFree\s{0,}\:+\s{0,}([\d\.]+).+?Cached\s{0,}\:+\s{0,}([\d\.]+).+?SwapTotal\s{0,}\:+\s{0,}([\d\.]+).+?SwapFree\s{0,}\:+\s{0,}([\d\.]+)/s", $str, $buf);
+
+    $res['memTotal'] = round($buf[1][0], 2);
+    $res['memFree'] = round($buf[2][0], 2);
+    $res['memCached'] = round($buf[3][0], 2);
+    $res['memUsed'] = ($res['memTotal']-$res['memFree']);
+    $res['memPercent'] = (floatval($res['memTotal'])!=0)?round($res['memUsed']/$res['memTotal']*100,2):0;
+    $res['memRealUsed'] = ($res['memTotal'] - $res['memFree'] - $res['memCached']);
+    $res['memRealPercent'] = (floatval($res['memTotal'])!=0)?round($res['memRealUsed']/$res['memTotal']*100,2):0;
+
+    $res['swapTotal'] = round($buf[4][0], 2);
+    $res['swapFree'] = round($buf[5][0], 2);
+    $res['swapUsed'] = ($res['swapTotal']-$res['swapFree']);
+    $res['swapPercent'] = (floatval($res['swapTotal'])!=0)?round($res['swapUsed']/$res['swapTotal']*100,2):0;
+
+    // LOAD AVG
+    if (false === ($str = @file("/proc/loadavg"))) return false;
+    $str = explode(" ", implode("", $str));
+    $str = array_chunk($str, 4);
+    $res['loadAvg'] = implode(" ", $str[0]);
+
+    return $res;
+}
 
 
+
+
+function bar($percent) {
+    $uptime = $sysInfo['uptime'];
+    $stime = date("Y年n月j日 H:i:s");
+    $df = round(@disk_free_space(".")/(1024*1024*1024),3);
+
+    $mt = $sysInfo['memTotal'];
+    $mu = round($sysInfo['memUsed']/1024,3);
+    $mf = round($sysInfo['memFree']/1024,3);
+    $mc = round($sysInfo['memCached']/1024,3);
+    $st = $sysInfo['swapTotal'];
+    $su = round($sysInfo['swapUsed']/1024,3);
+    $sf = round($sysInfo['swapFree']/1024,3);
+    $swapPercent = $sysInfo['swapPercent'];
+    $load = $sysInfo['loadAvg'];
+    $memRealPercent = $sysInfo['memRealPercent'];
+    $memPercent = $sysInfo['memPercent'];
+
+    //网卡流量
+    $strs = @file("/proc/net/dev"); 
+
+    for ($i = 2; $i < count($strs); $i++ )
+    {
+        preg_match_all( "/([^\s]+):[\s]{0,}(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/", $strs[$i], $info );
+        $tmo = round($info[2][0]/1024/1024, 5); 
+        $tmo2 = round($tmo / 1024, 5);
+        $NetInput[$i] = $tmo2;
+
+        $tmp = round($info[10][0]/1024/1024, 5); 
+        $tmp2 = round($tmp / 1024, 5);
+        $NetOut[$i] = $tmp2;
+    }
+}
+
+function myip(){
+    gethostbyname($_SERVER['SERVER_NAME'])
+}
+
+
+function netCtrl(){
+    $netusage = @file("/proc/net/dev");
+    for ($i = 2; $i < count($netusage); $i++ ){
+    preg_match_all( "/([^\s]+):[\s]{0,}(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/", $strs[$i], $info );
+        echo <<<NT
+        <tr>
+        <td width="15%">{$info[1][0]}:</td>
+        <td width="47%">已接收 : <font color='#CC0000'><span id="NetInput{$i}">0</span></font> G</td>
+        <td width="47%">已发送 : <font color='#CC0000'><span id="NetOut{$i}">0</span></font> G</td>
+        </tr>
+NT
+    }
+}
 
 
 
@@ -509,6 +646,6 @@ private static function checkXML($xmlfile){
     //include_once $XHPROF_ROOT . "xhprof_runs.php";
     //$XHPROF_FILEDIR = APPPATH . 'cache/xhprof';
     //$xhprof_runs = new XHProfRuns_Default ();
-    //$run_id = $xhprof_runs->save_run ( $xhprof_data, "mogujie-note" );
-    //echo "http://www.mogujie.com/xhprof/xhprof_html/index.php?run={$run_id}&source=mogujie-note";
+    //$run_id = $xhprof_runs->save_run ( $xhprof_data, "identify" );
+    //echo "http://www.xx.com/xhprof/xhprof_html/index.php?run={$run_id}&source=identify";
  
