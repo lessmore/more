@@ -25,11 +25,12 @@ define('ROOT', dirname(__FILE__) );#__DIR__@5.3
 define('INC_PATH', ROOT.'/include/');
 define('CFG_PATH', ROOT.'/config/');
 
-//error_reporting(0);
+error_reporting(0);
 set_magic_quotes_runtime(false);//deprecated @php5.3
 date_default_timezone_set ("Asia/Shanghai");
 
 //debug
 include ROOT.'/include/funcs.init.php';
 
+//development
 showIncTree();
