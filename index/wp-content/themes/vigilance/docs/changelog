@@ -1,6 +1,0 @@
-== Changelog ==
-
-= 2.3 =
-* Replaced the old logo uploader with a faster version that uses WP core.
-* Add a check_hash function to validate hex color output and add # if missing.
-* Add a check for border_color values.
