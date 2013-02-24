@@ -18,7 +18,7 @@
 */
 header('Content-type: text/html; Charset=UTF-8');
 
-define('lADY', 'Missing You!');
+define('LADY', 'Missing You!');
 define('AUTH_KEY', '12345_go_up_mountain_fight_tiger');
 
 define('ROOT', dirname(__FILE__) );#__DIR__@5.3
