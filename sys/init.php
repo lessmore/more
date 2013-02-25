@@ -18,12 +18,13 @@
 */
 header('Content-type: text/html; Charset=UTF-8');
 
-define('LADY', 'Missing You!');
-define('AUTH_KEY', '12345_go_up_mountain_fight_tiger');
+define('LADY', 'Miss You Much');
+define('AUTH_KEY', '12345_Go_Up_Mountain_Fight_Tiger');
 
 define('ROOT', dirname(__FILE__) );#__DIR__@5.3
 define('INC_PATH', ROOT.'/include/');
 define('CFG_PATH', ROOT.'/config/');
+define('CHARSET','UTF-8');
 
 error_reporting(0);
 set_magic_quotes_runtime(false);//deprecated @php5.3
@@ -32,5 +33,7 @@ date_default_timezone_set ("Asia/Shanghai");
 //debug
 include ROOT.'/include/funcs.init.php';
 
+call('router');
+
 //development
-showIncTree();
+call('showIncTree');

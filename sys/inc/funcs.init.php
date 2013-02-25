@@ -124,10 +124,11 @@ function env($key,$type='gpc',$options=array('value' => null, 'default' => null,
 * 
 * 暂不对命名空间支持
 *
-* @param   string $func_name 调用过程名 三种组合 array(obj,'method')|array('class','method')|function_name
-* @param   array [args] 传递给方法的参数列表
+* @param string $func_name 调用过程名 三种组合 array(obj,'method')|array('class','method')|function_name
+* @param array [args] 传递给方法的参数列表
+* @param think callback
 */
-function call($func_name, $func_args=array() ){
+function call($func_name, array $func_args=array()){
     try{
         empty($func_name) || exit("invaild function name");
 
@@ -147,16 +148,18 @@ function call($func_name, $func_args=array() ){
         }
 
         if (is_callable($func_name,false,$call_name)){
-            call_user_func_array($call_name,$func_args);
+            $callback = call_user_func_array($call_name,$func_args);
             $info = "$call_name called sucess!";
         }else{
             $info = "$call_name called falied!";
+            header('location:/404');
         }
     } catch(exception $e) {
         $info = $e->getMessage().$e->getFile()." on Line ".$e->getLine()."----".$e->getMessage()."----".$e->getCode()."----".$e->getFile()."----".$e->getLine()."----".$e->getTrace()."----".$e->getTraceAsString()."\n";
     }
 
     TDD($info);
+    return $callback;
 }
 
 
@@ -206,14 +209,18 @@ function load_funcs(){
 *   DeBug
 * -----------------------------------------
 *
+* @log 
 */
+//fwrite(STDOUT, "Enter your name: ");
+//$name = trim(fgets(STDIN));
+//fwrite(STDOUT, "Hello, $name!");
 function TDD($info){
     $info = "[".date("Y-m-d, H:d:s")."] ".$info;
     $debug_threshold = debug();
 
-    if ( $debug_threshold === 0 ){
+    if ($debug_threshold === 0){
         return false;
-    } else if ( $debug_threshold === 1 ){
+    } else if ($debug_threshold === 1){
         echo nl2br($info);
         flush();
         sleep(1);
@@ -252,6 +259,37 @@ function debug( $new=null ){
     }
 
     return $debug_threshold_;
+}
+
+
+//baidu.com/error/404.html
+//baidu.com/error/503.html
+//baidu.com/404.html
+//baidu.com/index/404.html
+//baidu.com/404/index.html
+//baidu.com/star.fdfs/meifd_fbdfd/xxxx
+//目录深度 权重
+//所以要无耻成这样吗 controller-method-arg1-arg2.html
+//http://www.seochat.org/mobile/nokia/n95.htm的URL长度=7+15+14+7，即43
+//http://www.seochat.org/mobile/nokia/n95.htm  =》 pinpai/tianfu/babaoju.html =》 pinpai-tianfu-babaoju.html
+function router($url=null){
+    if (empty($url)){
+        $url = $_SERVER['HTTP_HOST'];
+    } 
+
+    if (!is_url($url)){
+        setStatus(404);
+        exit;
+    }
+
+    $urls = pathinfo($url);
+
+    $controller = xx;
+    $action = oo;
+    $params = ooxx;
+
+    if ($action=
+    call(array($controller,$action),$params);
 }
 
 //Todo List

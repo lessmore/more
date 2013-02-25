@@ -639,7 +639,10 @@ NT
 /
 
 
-
+/*
+PHP 5 可以使用类型约束。函数的参数可以指定只能为对象（在函数原型里面指定类的名字），php 5.1 之后也可以指定只能为数组。 
+注意，即使使用了类型约束，如果使用NULL作为参数的默认值，那么在调用函数的时候依然可以使用NULL作为实参
+*/
 function array_cols(array $value, $key, $key_new='') {    
     $cols = array();
 
@@ -746,14 +749,53 @@ function redirect($url='/',$fkCache=0){
 
 
 
+/*
+* ----------------------------------------
+*   等宽截取字符
+* -----------------------------------------
+* 
+* @param $str pending cut
+* @param $length 全中文宽度的字数
+* @param $str长度>$length, $length-3 .'$省略符'
+*/
+function cutstr($str,$length,$more="..."){
+    if (mb_strlen($str,CHARSET)<$length-3){
+        return $more ? $str.$more : $str;
+    }
+
+    for ($i=0;$i<$length;$i++){
+        if (strlen($str{$i})==1){
+            $length++;//如果是窄字体侧多截取一字，这里length+1后新家的字回头也会被strlen判断，如果还是窄侧继续加1
+        }
+    }
+
+    if ($more){
+        return mb_substr($str,$length-3,CHARSET).$more;
+    }else{
+        return mb_substr($str,$length,CHARSET);
+    }
+}
 
 
 
 
+//异步
+function async($command,array $args=array(), array $callback=array('shell'=>'','web'=>'','method'=>'',null=>false)){
 
+    if (is_shell($command)){
+        system($command);
+    }
 
-
-
+    if (array_filter($callback)){
+        if ($callback['shell']){
+            async($callback,$args);
+        } else if ($callback['web']){
+            sync(url($callback,array('prepend'=>$args)));
+        } else {
+            call($callback,$args)
+        }
+    }
+}
 
 
 
