@@ -742,10 +742,28 @@ function redirect($url='/',$fkCache=0){
 
 
 
+/**
+ * 判断是否为ajax
+ *
+ * @access public
+ * @return boolean
+ */
+function isAjax()
+{   
+    return 'XMLHttpRequest' == env('HTTP_X_REQUESTED_WITH','es');
+}  
 
 
-
-
+/**
+ * 判断是否为flash
+ *
+ * @access public
+ * @return boolean
+ */
+public function isFlash()
+{
+    return 'Shockwave Flash' == env('USER_AGENT','es');
+}
 
 
 
@@ -763,9 +781,14 @@ function cutstr($str,$length,$more="..."){
         return $more ? $str.$more : $str;
     }
 
+    $thin = 0;
     for ($i=0;$i<$length;$i++){
         if (strlen($str{$i})==1){
-            $length++;//如果是窄字体侧多截取一字，这里length+1后新家的字回头也会被strlen判断，如果还是窄侧继续加1
+            $thin++;
+        }
+        if ($thin==2){
+            $length++;//如果是发现2窄字体时多截取一字，这里length+1后也会被迭代判断是否还是窄字体，这里length最大为原length*1.5
+            $thin = 0;
         }
     }
 
