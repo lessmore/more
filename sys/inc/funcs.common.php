@@ -721,7 +721,7 @@ function array_cols(array $value, $key, $key_new='') {
 
 function redirect($url='/',$fkCache=0){
     $url_ops = $fkCache ? array('prepend' => array('fk' => uniqid())) : array();
-    header("Location: ".url($url,$url_ops));
+    header("Location: ".url($url,$url_ops), TRUE, 302);
     exit;
 }
 

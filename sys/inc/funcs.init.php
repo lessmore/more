@@ -67,20 +67,20 @@ function env($key,$type='gpc',$options=array('value' => null, 'default' => null,
     if ( $type ){
         if ( !isset($value) ){
             switch (false){
-                case !stripos($type,'s'):$bingo=$_GLOBALS['_SERVER'][$key];break;
-                case !stripos($type,'e'):$bingo=$_GLOBALS['_ENV'][$key];break;
-                case !stripos($type,'g'):$bingo=$_GLOBALS['_GET'][$key];break;
-                case !stripos($type,'p'):$bingo=$_GLOBALS['_POST'][$key];break;
-                case !stripos($type,'c'):$bingo=$_GLOBALS['_COOKIE'][$key];break;
-                case !stripos($type,'f'):$bingo=$_GLOBALS['_FILES'][$key];break;
+                case !(stripos($type,'s') && isset($_GLOBALS['_SERVER'][$key]): $bingo=$_GLOBALS['_SERVER'][$key];  break;
+                case !(stripos($type,'e') && isset($_GLOBALS['_ENV'][$key]):    $bingo=$_GLOBALS['_ENV'][$key];     break;
+                case !(stripos($type,'g') && isset($_GLOBALS['_GET'][$key]):    $bingo=$_GLOBALS['_GET'][$key];     break;
+                case !(stripos($type,'p') && isset($_GLOBALS['_POST'][$key]):   $bingo=$_GLOBALS['_POST'][$key];    break;
+                case !(stripos($type,'c') && isset($_GLOBALS['_COOKIE'][$key]): $bingo=$_GLOBALS['_COOKIE'][$key];  break;
+                case !(stripos($type,'f') && isset($_GLOBALS['_FILES'][$key]):  $bingo=$_GLOBALS['_FILES'][$key];   break;
             }
         }else{
             switch (false){
-                case !stripos($type,'s'):$_GLOBALS['_SERVER'][$key]=$value;break;
-                case !stripos($type,'e'):$_GLOBALS['_ENV'][$key]=$value;break;
-                case !stripos($type,'g'):$_GLOBALS['_GET'][$key]=$value;break;
-                case !stripos($type,'p'):$_GLOBALS['_POST'][$key]=$value;break;
-                case !stripos($type,'f'):$_GLOBALS['_FILES'][$key]=$value;break;
+                case !stripos($type,'s'): $_GLOBALS['_SERVER'][$key]=$value; break;
+                case !stripos($type,'e'): $_GLOBALS['_ENV'][$key]=$value;    break;
+                case !stripos($type,'g'): $_GLOBALS['_GET'][$key]=$value;    break;
+                case !stripos($type,'p'): $_GLOBALS['_POST'][$key]=$value;   break;
+                case !stripos($type,'f'): $_GLOBALS['_FILES'][$key]=$value;  break;
                 case !stripos($type,'c'):
                     $_GLOBALS['_COOKIE'][$key]=$value;
                     setcookie(cfg('cookie_prefix').$key,$value,$option['expire'],$option['path'],$option['domain']);
@@ -97,7 +97,9 @@ function env($key,$type='gpc',$options=array('value' => null, 'default' => null,
                 foreach($v as $kk => $vv){
                     if ( $kk==$key ){
                         if (!isset($value)){
-                            $bingo = $GLOBALS[$k][$kk];
+                            if (isset($GLOBALS[$k][$kk]){
+                                $bingo = $GLOBALS[$k][$kk];
+                            }
                         }else{
                             $GLOBALS[$k][$kk] = $value;
                             return $value;
@@ -226,6 +228,7 @@ function TDD($info){
         sleep(1);
     }
 
+    $trace = debug_backtrace();
     call(array('webapi','log'),array($info,cfg('log_file_tdd')));
 }
 
