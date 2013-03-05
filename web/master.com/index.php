@@ -1,7 +1,9 @@
 <?php
-require_once dir(__FILE__).'../sys/init.php';
+require_once __DIR__.'../sys/init.php';
 
-$action = 'index';
-$controller = 'index';
+call('debug', array(1));
+call('reg', array('befor',array('pro_start')));
+call('reg', array('befor',array('showIncTree')));
+call('reg', array('after',array('pro_end')));
 
-
+BabyRun();

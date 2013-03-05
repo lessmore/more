@@ -1,20 +1,23 @@
-<?php /*
+<?php 
+SpeakUp();
+
+/*
 | ------------------------------------
 |   √.Demands Make Perfect
 | ------------------------------------
 |
 */
 return array(
-    'inc_path'          => INC_PATH,
-    'cfg_path'          => CFG_PATH,
-    'class_path'        => INC_PATH,
-    'funcs_path'        => INC_PATH,
+    'cfg_path'          => SYS.'/cfg/',
+    'inc_path'          => SYS.'/inc/',
+    'class_path'        => SYS.'/inc/',
+    'funcs_path'        => SYS.'/inc/',
+    'log_path'          => SYS.'../log/',
 
     'auth_key'          => AUTH_KEY,
     'debug_key'         => AUTH_KEY,
-    'debug_name'        => 'ladybug',
 
-    'log_file_tdd'      => 'tdd.log',
+    'log_file.tdd'      => 'tdd.log',
 
 
     'cookie_prefix'     => '',
@@ -27,17 +30,24 @@ return array(
     'debug_threshold'   => 0,
 
 
-
     # domain settings
     'index_domain'       => DOMAIN,
     'img_domain'         => 'img.'.DOMAIN,# array( img0,img1, random
-    'file_domain'        => 'file.'.DOMAIN,
     'try_domain'         => 'try.'.DOMAIN,
-    'tools_domain'       => 'tools.'.DOMAIN,
 
 
-    # db settings
-    'db' => array(
+    # service config
+    'web'        => array(
+    ),
+    'memcache'        => array(
+    ),
+    'hadoop'        => array(
+    ),
+    'redis'        => array(
+    ),
+    'mysql'        => array(
+    ),
+    'mysql' => array(
             'master' => array(
                 'hostname' => "localhost";
                 'username' => "db0";

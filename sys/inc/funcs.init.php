@@ -1,5 +1,5 @@
 <?php
-speak_up();
+speakup();
 
 /*
 * ------------------------------------------
@@ -7,9 +7,108 @@ speak_up();
 * ------------------------------------------
 *
 */
-function speak_up(){
-    defined('LADY') || exit( 'Need Lady To Keep Moving  :-0' );
+function speakup(){
+    defined('LADY') || exit('Need Lady To Keep Moving  :-0');
 }
+
+
+
+/*
+* ------------------------------------------
+*  Run Baby Run ...
+* ------------------------------------------
+*
+*/
+function BabyRun(){
+    call('client');
+
+    //前调
+    call('reg', array('befor'));
+
+    //中调
+    call('router');
+
+    //尾调
+    call('reg', array('after'));
+
+    //囧，你当香水啊。。。
+}
+
+
+
+/*
+* ------------------------------------------
+* client handler
+* ------------------------------------------
+*
+* IP, Attacks clear
+*
+*/
+function client() {
+    global $Love;
+
+    if (!empty($_SERVER['HTTP_X_REAL_IP']) && intval($_SERVER['HTTP_X_REAL_IP'])>0) {
+        $Love->user_ip = $_SERVER['HTTP_X_REAL_IP'];
+    } else if (!empty($_SERVER['HTTP_X_FORWARDED_FOR']) ) { 
+        $ips = explode(',',$_SERVER['HTTP_X_FORWARDED_FOR']);
+        intval($ips[0])>0 && $Love->user_ip = $ips[0];
+    } else if (!empty($_SERVER['HTTP_CLIENT_IP']) && intval($_SERVER['HTTP_CLIENT_IP'])>0) {
+        $Love->user_ip = $_SERVER['HTTP_CLIENT_IP'];
+    } else {
+        $Love->user_ip = $_SERVER['REMOTE_ADDR'];
+    }
+
+    if (preg_match('/^(192|10|127)\./',$Love->user_ip)) {
+        
+        response(400);
+    }
+
+
+    //通过Url打开debug//防止链接被记录,每10分钟的密钥变一次
+    //ladybug=123451749823432432, 17498-5153(5日15点3x分)==12345
+    if ((substr(env('ladybug'),5,5)-date('jHi'))==12345){
+        error_reporting(E_ALL);
+        ini_set('display_errors','On');
+        ini_set('html_errors','On');
+        cfg('debug_threshold', 1);
+        tdd('debug open by url');
+    }
+
+}
+
+
+
+
+/*
+* ----------------------------------------
+*   注册、执行回调/钩子函数
+* -----------------------------------------
+*
+* 传入参数则注册，不传时执行
+* Register a function for execution on any time/where
+*
+* 这两个是已经定义的主程执行前后的可注册的回调, 可根据自己需要灵活注册其它的，并在适合的地方时机放置回调
+* | befor 前调
+* | after 尾调
+*
+* @param is_callable function name
+* @param args
+*/
+function reg($hook,$callback=null,array $arguments=array()){
+    static $REGISTER = array();
+
+    if ($callback){
+        isset($REGISTER[$hook]) || $REGISTER[$hook]=array();
+        array_push($REGISTER[$hook], array('callback'=>$callback,'arguments' => $arguments));
+        return;
+    }
+
+    if ($REGISTER[$hook]){
+        foreach($REGISTER[$hook] as $k => $v){
+            call($v['callback'],$v['arguments']);
+        }
+    }
+} 
 
 
 
@@ -41,7 +140,7 @@ function cfg($key,$value=null ){
         }
     }
 
-    return $CFG_ARRAY[$cfg_name];
+    return isset($CFG_ARRAY[$cfg_name]) ? $CFG_ARRAY[$cfg_name] : null;
 }
 
 
@@ -153,8 +252,7 @@ function call($func_name, array $func_args=array()){
             $callback = call_user_func_array($call_name,$func_args);
             $info = "$call_name called sucess!";
         }else{
-            $info = "$call_name called falied!";
-            header('location:/404');
+            $info = "$call_name called falied! is not callable!!";
         }
     } catch(exception $e) {
         $info = $e->getMessage().$e->getFile()." on Line ".$e->getLine()."----".$e->getMessage()."----".$e->getCode()."----".$e->getFile()."----".$e->getLine()."----".$e->getTrace()."----".$e->getTraceAsString()."\n";
@@ -208,61 +306,26 @@ function load_funcs(){
 
 /*
 * ----------------------------------------
-*   DeBug
+*   DeBug 开发用。
 * -----------------------------------------
+*
+* fwrite(STDOUT, "Enter your name: ");
+* $name = trim(fgets(STDIN));
+* fwrite(STDOUT, "Hello, $name!");
 *
 * @log 
 */
-//fwrite(STDOUT, "Enter your name: ");
-//$name = trim(fgets(STDIN));
-//fwrite(STDOUT, "Hello, $name!");
 function TDD($info){
-    $info = "[".date("Y-m-d, H:d:s")."] ".$info;
-    $debug_threshold = debug();
+    $info = "[".date("Y-m-d, H:d:s")."] ".$info."\n";
+    //$trace = debug_backtrace();
 
-    if ($debug_threshold === 0){
-        return false;
-    } else if ($debug_threshold === 1){
+    if (cfg('debug_threshold') === 1){
         echo nl2br($info);
-        flush();
-        sleep(1);
     }
-
-    $trace = debug_backtrace();
-    call(array('webapi','log'),array($info,cfg('log_file_tdd')));
+    
+    error_log($info,3,cfg('log_path').date('Ymd').'/'.cfg('log_file.tdd');
 }
 
-
-
-/*
-* ----------------------------------------
-*   Debug Level
-* -----------------------------------------
-*
-* @param follow-up
-*/
-function debug( $new=null ){
-    static $debug_threshold;
-
-    if ( isset($debug_threshold) ){
-        return $debug_threshold;
-    }
-
-    if ( isset($new) ){
-        $debug_threshold = $new;
-        return $debug_threshold;
-    }
-
-    $debug_threshold_ = env(cfg('debug_name')) == cfg('debug_key') ? 1 : cfg('debug_threshold');
-
-    if ($debug_threshold_ == 1){
-        error_reporting(E_ALL);
-        ini_set('display_errors','On');
-        ini_set('html_errors','On');
-    }
-
-    return $debug_threshold_;
-}
 
 
 //baidu.com/error/404.html
@@ -294,6 +357,11 @@ function router($url=null){
     if ($action=
     call(array($controller,$action),$params);
 }
+
+
+
+
+
 
 //Todo List
 //register_shutdown_function()

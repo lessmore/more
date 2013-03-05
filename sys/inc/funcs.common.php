@@ -1,4 +1,6 @@
 <?php
+SpeakUp();
+
 /*
 * ----------------------------------------
 *   Log process trace
@@ -30,7 +32,7 @@ function url($url='',$url_options=array('prepend'=>array(),'append'=>array(),'do
     $query_append = $query_options['append'];
 
     if ($domain){
-        $url = cfg($domain).$url;
+        $url = onin).$url;
     }
 
     if (is_array($query_prepend)){
@@ -822,18 +824,25 @@ function async($command,array $args=array(), array $callback=array('shell'=>'','
 
 
 
+function pro_start(){
+    define('START_MEMORY', memory_get_usage());
+    define('START_TIME', microtime(TRUE));
+    xhprof_enable();
+}
 
+function pro_end(){
+    echo 'memory: ' . number_format((memory_get_peak_usage() - KOHANA_START_MEMORY) / 1024, 2) . "KB;\n";
+    echo 'execute: ' . number_format(microtime(TRUE) - KOHANA_START_TIME, 5).'S';
 
-    //xhprof_enable();
-   
-    //Your Codes .........
-    
-    //$xhprof_data = xhprof_disable ();
-    //$XHPROF_ROOT = MODPATH . 'xhprof/utils/';
-    //include_once $XHPROF_ROOT . "xhprof_lib.php";
-    //include_once $XHPROF_ROOT . "xhprof_runs.php";
-    //$XHPROF_FILEDIR = APPPATH . 'cache/xhprof';
-    //$xhprof_runs = new XHProfRuns_Default ();
-    //$run_id = $xhprof_runs->save_run ( $xhprof_data, "identify" );
-    //echo "http://www.xx.com/xhprof/xhprof_html/index.php?run={$run_id}&source=identify";
- 
+    //xhprof
+    $xhprof_data = xhprof_disable();
+    // Saving the XHProf run
+    $XHPROF_ROOT = MODPATH.'/xhprof/utils';
+    include_once $XHPROF_ROOT . "/xhprof_lib.php";
+    include_once $XHPROF_ROOT . "/xhprof_runs.php";
+
+    $xhprof_runs = new XHProfRuns_Default();
+    // Save the run under a namespace "xhprof_foo".
+    $run_id = $xhprof_runs->save_run($xhprof_data, "test");
+    echo "http://www.xx.com/xhprof/xhprof_html/index.php?run={$run_id}&source=identify";
+} 
