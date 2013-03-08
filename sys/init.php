@@ -3,7 +3,7 @@
 |---------------------------------------------------------------
 |  Project - BULAIDIAN.COM
 |---------------------------------------------------------------
-|||  ⊙.⊙
+|||  ⊙⊙
 |  ReadMe.
 |
 |       一二三四五，上山打老虎。
@@ -16,24 +16,22 @@
 | @author Less
 | @copyright 囧不來電有限公司
 */
-error_reporting(0);
-date_default_timezone_set("Asia/Shanghai");
-//set_magic_quotes_runtime(false); //deprecated @php5.3
-
 header('Content-type:text/html; Charset=UTF-8');
 
-define('CHARSET', 'UTF-8');
 define('LADY', 'Miss You Much');
-define('AUTH_KEY', '12345_Go_Up_Mountain_Fight_Tiger');
-define('SYS', __DIR__); //dirname(__FILE__)- php5.3 or lower
+define('SYS', __DIR__); //dirname(__FILE__) php 5.3 --     //set_magic_quotes_runtime(false); //php 5.3 --
 
 $Love = (object) NULL;  //定义一个全局对象变量,加(object)只是为了强调
 
+error_reporting(0);
+date_default_timezone_set("Asia/Shanghai");
 require SYS.'/inc/funcs.init.php';
 
-call('debug', array(1));
-call('reg', array('befor',array('pro_start')));
-call('reg', array('befor',array('showIncTree')));
-call('reg', array('after',array('pro_end')));
+/*
+call('reg', array('top',array('debug',1)));
+call('reg', array('top',array('pro_start')));
+call('reg', array('top',array('showIncTree')));
+call('reg', array('low',array('pro_end')));
 
-BabyRun();
+Perfume();
+*/

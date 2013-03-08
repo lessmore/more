@@ -22,9 +22,6 @@ class Http
     }
 
 
-
-
-
     /**
      * 获取url返回值，curl方法
      */
@@ -98,30 +95,6 @@ class Http
         fclose($fp);
     }
 
-    /**
-     * 获取客户端IP
-     *
-     * @return string $ip
-     */
-    public static function getIp()
-    {
-        if (getenv('HTTP_CLIENT_IP'))
-        {
-            $ip = getenv('HTTP_CLIENT_IP');
-        }
-        elseif (getenv('HTTP_X_FORWARDED_FOR'))
-        {
-            $ip = getenv('HTTP_X_FORWARDED_FOR');
-        }
-        elseif (getenv('REMOTE_ADDR'))
-        {
-            $ip = getenv('REMOTE_ADDR');
-        }
-        else
-        {
-            $ip = $_SERVER['REMOTE_ADDR'];
-        }
-        return $ip;
-    }
+
 }
 ?>

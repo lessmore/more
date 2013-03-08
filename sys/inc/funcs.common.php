@@ -6,6 +6,9 @@ SpeakUp();
 *   Log process trace
 * -----------------------------------------
 *
+* fwrite(STDOUT, "Enter your name: ");
+* $name = trim(fgets(STDIN));
+* fwrite(STDOUT, "Hello, $name!");
 */
 function mark($info,$file){
     call(array('webapi','log'),array($info,$file));
@@ -32,7 +35,7 @@ function url($url='',$url_options=array('prepend'=>array(),'append'=>array(),'do
     $query_append = $query_options['append'];
 
     if ($domain){
-        $url = onin).$url;
+        $url = $domain.$url;
     }
 
     if (is_array($query_prepend)){
@@ -673,32 +676,38 @@ function array_cols(array $value, $key, $key_new='') {
     /** 
      * 设置HTTP状态
      *
+     *
      * @access public
      * @param integer $code http代码
      * @return void
+     * @see http_response_code() >=php5.4
      */
-    public static function setStatus($code)
+    public static function sent_header($code)
     {   
-    static $_httpCode = array(
-        301 => 'Moved Permanently',//本网页永久性转移到另一个地址
-        302 => 'Found',//暂时转向到另外一个网址。一个不道德的人在他自己的网址A做一个302重定向到你的网址B，出于某种原因， Google搜索结果所显示的仍然是网址A，但是所用的网页内容却是你的网址B上的内容，这种情况就叫做网址URL劫持。你辛辛苦苦所写的内容就这样被别人偷走了。u
-        303 => 'See Other',
-        304 => 'Not Modified',
-        400 => 'Bad Request',
-        401 => 'Unauthorized',
-        402 => 'Payment Required',
-        403 => 'Forbidden',
-        404 => 'Not Found',
-        500 => 'Internal Server Error',
-        501 => 'Not Implemented',
-        502 => 'Bad Gateway',
-        503 => 'Service Unavailable',
-        504 => 'Gateway Timeout'
-    );
-        if (isset(self::$_httpCode[$code])) {
+        $http_code = array(
+            204 => 'No Content',//无言以对
+            301 => 'Moved Permanently',//本网页永久性转移到另一个地址
+            302 => 'Found',//暂时转向到另外一个网址。一个不道德的人在他自己的网址A做一个302重定向到你的网址B，出于某种原因， Google搜索结果所显示的仍然是网址A，但是所用的网页内容却是你的网址B上的内容，这种情况就叫做网址URL劫持。你辛辛苦苦所写的内容就这样被别人偷走了。u
+            303 => 'See Other',
+            304 => 'Not Modified',
+            400 => 'Bad Request',
+            401 => 'Unauthorized',
+            402 => 'Payment Required',
+            403 => 'Forbidden',
+            404 => 'Not Found',
+            500 => 'Internal Server Error',
+            501 => 'Not Implemented',
+            502 => 'Bad Gateway',
+            503 => 'Service Unavailable',
+            504 => 'Gateway Timeout'
+        );
+        if (isset($http_code[$code])) {
             header('HTTP/1.1 ' . $code . ' ' . self::$_httpCode[$code], true, $code);
-        }   
+        }
+
+        exit;
     }
+
 
     /**
      * 抛出json回执信息
@@ -779,7 +788,7 @@ public function isFlash()
 * @param $str长度>$length, $length-3 .'$省略符'
 */
 function cutstr($str,$length,$more="..."){
-    if (mb_strlen($str,CHARSET)<$length-3){
+    if (mb_strlen($str,cfg('charset')<$length-3){
         return $more ? $str.$more : $str;
     }
 
