@@ -18,7 +18,7 @@ function Speakup(){
 * ------------------------------------------
 * 
 * 前调 top note
-* 中调 middle note
+* 中调 mid note
 * 尾调 low note
 *
 */
@@ -26,11 +26,11 @@ function Perfume(){
     //调制(默认)
     call('reg', array('top','client'));
     call('reg', array('top','debug'));
-    call('reg', array('middle','router'));
+    call('reg', array('mid','router'));
 
     //前调'中调'尾调
     call('reg', array('top'));
-    call('reg', array('middle');
+    call('reg', array('mid');
     call('reg', array('low'));
 }
 
@@ -46,6 +46,9 @@ function Perfume(){
 function client() {
     global $Love;
 
+    //Time of start request
+    $Love->time = $_SERVER['REQUEST_TIME'];
+
     //IP ADDR
     if (!empty($_SERVER['HTTP_X_REAL_IP']) && intval($_SERVER['HTTP_X_REAL_IP'])>0) {
         $Love->user_ip = $_SERVER['HTTP_X_REAL_IP'];
@@ -58,7 +61,7 @@ function client() {
     }
 
     if (preg_match('/^(192\.168|10|127)\./', $Love->user_ip)) {//内网或伪造成内网IP的用户, 127实际只有0,16-31
-        call('sent_header', array(404));
+        call('send_header', array(404));
     }//Ed
 
     //爬虫判断
@@ -114,7 +117,7 @@ function debug($debug_threshold=0){
 *
 * 这三是已经定义的执行前后的可注册的回调, 可根据自己需要灵活注册其它的，并在适合的地方时机放置回调
 * | top     前调
-* | middle  中调
+* | mid  中调
 * | low     尾调
 *
 * @param string/array is_callable function name
@@ -122,7 +125,7 @@ function debug($debug_threshold=0){
 */
 function reg($hook,$callback=null,array $arguments=array()){
     global $Love;
-    isset($Love) || $Love->_reg=array('top' => array(),'middle' => array(),'low' => array());
+    isset($Love) || $Love->_reg=array('top' => array(),'mid' => array(),'low' => array());
 
     if ($callback){
         isset($Love->_reg[$hook]) || $Love->_reg[$hook]=array();
@@ -277,7 +280,7 @@ function call($func_name, array $func_args=array()){
         }else{
             if (!function_exists($func_name)){
                 //load functions
-                $files = glob(cfg('funcs_path').'funcs.*.php');
+                $files = glob(cfg('func_path').'func.*.php');
 
                 if (!empty($files)){
                     foreach($files as $v){
@@ -319,7 +322,7 @@ function call($func_name, array $func_args=array()){
 * @param string $info
 */
 function Tracy($info){
-    $info = date("Y-m-d, H:d:s")." ".$info."\n";
+    $info = date("Y-m-d, H:d:s")." ".$info.PHP_EOL;
     //$trace = debug_backtrace();
 
     if (cfg('debug_threshold') === 1){
@@ -327,7 +330,7 @@ function Tracy($info){
     }
     $info = $info.' ['.implode(' ',error_get_last()).']';
     
-    error_log($info,3,cfg('log_path').date('Ymd').'/'.cfg('log_file_tracy');
+    file_put_contents(cfg('log_path').date('Ymd').'/'.cfg('log_file_tracy'),$info,FILE_APPEND);
 }
 
 

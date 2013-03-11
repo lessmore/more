@@ -15,17 +15,19 @@
 |
 | @author Less
 | @copyright 囧不來電有限公司
+| @require PHP 5.3
 */
 header('Content-type:text/html; Charset=UTF-8');
 
 define('LADY', 'Miss You Much');
-define('SYS', __DIR__.'/'); //dirname(__FILE__) php 5.3 --     //set_magic_quotes_runtime(false); //php 5.3 --
+define('SYS', __DIR__.'/'); //dirname(__FILE__);//php 5.3-- //set_magic_quotes_runtime(false);//php 5.3 --
 
 $Love = (object) NULL;  //定义一个全局对象变量,加(object)只是为了强调
 
 error_reporting(0);
 date_default_timezone_set("Asia/Shanghai");
-require SYS.'inc/funcs.init.php';
+
+require SYS.'inc/func.init.php';
 
 /*
 call('reg', array('top',array('debug',1)));

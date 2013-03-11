@@ -12,6 +12,19 @@ SpeakUp();
 */
 function mark($info,$file){
     call(array('webapi','log'),array($info,$file));
+
+    //chmod($file,0755);
+    //Add the month to the directory
+    //$directory .= DIRECTORY_SEPARATOR.date('m');
+
+    //if ( ! is_dir($directory))
+    //{   
+        //Create the yearly directory
+        //mkdir($directory, 02777);
+
+        //Set permissions (must be manually set to fix umask issues)
+        //chmod($directory, 02777);
+    //}  
 }
 
 
@@ -682,7 +695,7 @@ function array_cols(array $value, $key, $key_new='') {
      * @return void
      * @see http_response_code() >=php5.4
      */
-    public static function sent_header($code)
+    public static function send_header($code)
     {   
         $http_code = array(
             204 => 'No Content',//无言以对
@@ -690,7 +703,7 @@ function array_cols(array $value, $key, $key_new='') {
             302 => 'Found',//暂时转向到另外一个网址。一个不道德的人在他自己的网址A做一个302重定向到你的网址B，出于某种原因， Google搜索结果所显示的仍然是网址A，但是所用的网页内容却是你的网址B上的内容，这种情况就叫做网址URL劫持。你辛辛苦苦所写的内容就这样被别人偷走了。u
             303 => 'See Other',
             304 => 'Not Modified',
-            400 => 'Bad Request',
+            400 => 'Bad Request',//可在密码验证错误之类的情况返回
             401 => 'Unauthorized',
             402 => 'Payment Required',
             403 => 'Forbidden',
@@ -834,6 +847,7 @@ function async($command,array $args=array(), array $callback=array('shell'=>'','
 
 
 function pro_start(){
+    $time = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];//@PHP 5.4
     define('START_MEMORY', memory_get_usage());
     define('START_TIME', microtime(TRUE));
     xhprof_enable();
@@ -855,3 +869,19 @@ function pro_end(){
     $run_id = $xhprof_runs->save_run($xhprof_data, "test");
     echo "http://www.xx.com/xhprof/xhprof_html/index.php?run={$run_id}&source=identify";
 } 
+
+
+function object_to_array($obj){
+    $_arr = is_object($obj) ? get_object_vars($obj) : $obj;
+    foreach ($_arr as $key => $val){
+        $val = (is_array($val) || is_object($val)) ? object_to_array($val) : $val;
+        $arr[$key] = $val;
+    }
+    return $arr;
+}
+
+function json_send($stuff){
+    $callback = env('callback','pg');
+    if ($callback){}
+    exit(json_send($stuff));
+}
