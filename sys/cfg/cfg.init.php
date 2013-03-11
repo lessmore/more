@@ -7,11 +7,11 @@
 */
 return array(
     'charset'           => 'UTF-8',
-    'inc_path'          => SYS.'/inc',
-    'cfg_path'          => SYS.'/inc',
-    'class_path'        => SYS.'/inc',
-    'funcs_path'        => SYS.'/inc',
-    'log_path'          => SYS.'../log',
+    'inc_path'          => SYS.'inc/',
+    'cfg_path'          => SYS.'inc/',
+    'class_path'        => SYS.'inc/',
+    'funcs_path'        => SYS.'inc/',
+    'log_path'          => SYS.'../log/',
 
     'log_file_tracy'    => 'tracy.log',
     'auth_key'          => '12345_Go_Up_Mountain_Fight_Tiger',

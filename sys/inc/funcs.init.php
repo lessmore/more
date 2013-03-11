@@ -7,7 +7,7 @@ Speakup();
 * ------------------------------------------
 * 囧
 */
-function speakup(){
+function Speakup(){
     defined('LADY') || exit('Need Lady To Keep Moving  :-0');
 }
 
@@ -57,11 +57,25 @@ function client() {
         $Love->user_ip = $_SERVER['REMOTE_ADDR'];
     }
 
-    if (preg_match('/^(192|10|127)\./', $Love->user_ip)) {
+    if (preg_match('/^(192\.168|10|127)\./', $Love->user_ip)) {//内网或伪造成内网IP的用户, 127实际只有0,16-31
         call('sent_header', array(404));
+    }//Ed
+
+    //爬虫判断
+    if (!empty($_SERVER['HTTP_USER_AGENT'])) {
+        if (preg_match ( '/Baiduspider|baidu\s+Transcoder|bingbot|MSNbot|Yahoo\!\ Slurp|iaskspider|Sogou[a-zA-Z\s]+spider|Googlebot|YodaoBot|OutfoxBot|ia_archiver|msnbot|P\.    Arthur|QihooBot|Gigabot|360Spider/i', $_SERVER ['HTTP_USER_AGENT'] ))
+        return true;
     }
 
+    //Stop Service
+    //404
     //
+    //
+    //Service Unavailable
+    //蘑菇施工队抢修中，很快回来！
+
+    //
+    if (PHP_SAPI=='cli'){}
 }
 
 
@@ -185,13 +199,14 @@ function env($key,$type='gpc',$options=array('default'=>null,'value'=>null,'cook
     if (!isset($options['value'])){
         //get
         switch (false){
-            case !(stripos($type,'g') && isset($_GET[$key])):    $bingo=$_GET[$key];     break;
-            case !(stripos($type,'p') && isset($_POST[$key])):   $bingo=$_POST[$key];    break;
-            case !(stripos($type,'c') && isset($_COOKIE[$key])): $bingo=$_COOKIE[$key];  break;
-            case !(stripos($type,'s') && isset($_SERVER[$key])): $bingo=$_SERVER[$key];  break;
-            case !(stripos($type,'e') && isset($_ENV[$key])):    $bingo=$_ENV[$key];     break;
-            case !(stripos($type,'f') && isset($_FILES[$key])):  $bingo=$_FILES[$key];   break;
-            case isset($GLOBALS[$key]):                          $bingo=$GLOBALS[$key];  break;
+            case !(strpos($type,'g') && isset($_GET[$key])):    $bingo=$_GET[$key];     break;
+            case !(strpos($type,'p') && isset($_POST[$key])):   $bingo=$_POST[$key];    break;
+            case !(strpos($type,'c') && isset($_COOKIE[$key])): $bingo=$_COOKIE[$key];  break;
+            case !(strpos($type,'s') && isset($_SESSION[$key])):$bingo=$_SESSION[$key]; break;
+            case !(strpos($type,'S') && isset($_SERVER[$key])): $bingo=$_SERVER[$key];  break;
+            case !(strpos($type,'E') && isset($_ENV[$key])):    $bingo=$_ENV[$key];     break;
+            case !(strpos($type,'f') && isset($_FILES[$key])):  $bingo=$_FILES[$key];   break;
+            case isset($GLOBALS[$key]):                         $bingo=$GLOBALS[$key];  break;
         }
 
         if (empty($bingo) and $options['default']){
@@ -202,18 +217,20 @@ function env($key,$type='gpc',$options=array('default'=>null,'value'=>null,'cook
     }else{
         //set
         switch (false){
-            case !stripos($type,'g'): $_GLOBALS['_GET'][$key]   =$options['value'];break;
-            case !stripos($type,'p'): $_GLOBALS['_POST'][$key]  =$options['value'];break;
-            case !stripos($type,'s'): $_GLOBALS['_SERVER'][$key]=$options['value'];break;
-            case !stripos($type,'e'): $_GLOBALS['_ENV'][$key]   =$options['value'];break;
-            case !stripos($type,'c'):
-                $_GLOBALS['_COOKIE'][$key]=$options['value'];
+            case !strpos($type,'g'): $_GET[$key]    =$options['value'];break;
+            case !strpos($type,'p'): $_POST[$key]   =$options['value'];break;
+            case !strpos($type,'s'): $_SESSION[$key]=$options['value'];break;
+            case !strpos($type,'S'): $_SERVER[$key] =$options['value'];break;
+            case !strpos($type,'E'): $_ENV[$key]    =$options['value'];break;
+            case !strpos($type,'c'):
+                $_COOKIE[$key]=$options['value'];
                 isset($options['cookie'])||$options['cookie']=array();
                 isset($optoins['cookie']['expire'])||$options['cookie']['expire']=86400;
                 isset($optoins['cookie']['path'])||$options['cookie']['path']='/';
                 isset($optoins['cookie']['domain'])||$options['cookie']['domain']='.';
                 setcookie(cfg('cookie_prefix').$key,$options['value'],$options['cookie']['expire'],$options['cookie']['path'],$options['cookie']['domain']);
                 break;
+            default: $GLOBALS[$key]=$options['value'];break;
         }
 
         return $options['value'];
@@ -239,33 +256,39 @@ function call($func_name, array $func_args=array()){
         if (is_array($func_name)){
             list($class_name,$method) = $func_name;
             
-            if (is_string($class_name) and !class_exists($class_name)){
-                //load classes
-                $class_name = $str_replace('_', '/', $class_name);
-                $class_file = '/class.'.strtolower($class_name).'.php';
+            //array('class','method')处理
+            if (is_string($class_name)){
+                if (!class_exists($class_name)){
+                    //load classes
+                    if (strpos($class_name,'_')!==false){
+                        $class_file = getcwd().'/'.str_replace('_','/',$class_name);//MVC
+                    }else{
+                        $class_file = cfg('class_path').'class.'.strtolower($class_name).'.php';//SYS
+                    }
 
-                if (file_exists(cfg('class_path').$class_file) ){
-                    require_once $class_file;
-                } else if (defined('APPPATH') and file_exists(APPPATH.cfg('app_class_dir_name').$class_file){
-                    require_once $class_file;
+                    if (is_file($class_file))
+                        require_once $class_file;
+                    }//Ed
                 }
 
-                $obj = new $class_name;//Ed
-                $call_name = array($obj,$method);
-            }
+                $obj = new $class_name;
+                $func_name = array($obj,$method);
+            }//Ed
         }else{
             if (!function_exists($func_name)){
                 //load functions
                 $files = glob(cfg('funcs_path').'funcs.*.php');
 
-                if ( !empty($files) ){
-                    foreach( $files as $v){
+                if (!empty($files)){
+                    foreach($files as $v){
                         require_once $v;
                     }
                 }//Ed
             }
         }
 
+        //参数2:false的意图为仅当函数或方法可真实调用时才返回true，举个例子，私有方法外部调用is_callable将返回false! 默认为false。
+        //另外一点，对于非静态方法的声明，$call_name也会返回可调用形式class::method，所以即使你NB的想用静态，也不用刻意去声明静态。
         if (is_callable($func_name,false,$call_name)){
             $return = call_user_func_array($call_name,$func_args);
             $info = "$call_name called sucess!";
@@ -274,6 +297,10 @@ function call($func_name, array $func_args=array()){
         }
     } catch(exception $e) {
         $info = $e->getMessage()." ".$e->getFile()." on Line ".$e->getLine()."----".$e->getCode()."----".$e->getTrace()."----".$e->getTraceAsString();
+    }
+
+    if (cfg('debug_threshold')==1){
+        $info .= var_export($func_args,1);
     }
 
     Tracy($info);
@@ -298,6 +325,7 @@ function Tracy($info){
     if (cfg('debug_threshold') === 1){
         echo nl2br($info);
     }
+    $info = $info.' ['.implode(' ',error_get_last()).']';
     
     error_log($info,3,cfg('log_path').date('Ymd').'/'.cfg('log_file_tracy');
 }
@@ -317,17 +345,22 @@ function Tracy($info){
 function router($url=null,$route_rule=''){
     global $Love;
 
-    empty($route_rule) && $route_rule="application/controller/action/arg1/arg2/arg3/.html)";
+    if (empty($route_rule)){
+       $route_rule="application/controller/action/arg1/arg2/arg3/.html)";
+    }
     isset($Love->route_rule)||$Love->route_rule=$route_rule;
 
-    empty($url) && $url=$_SERVER['HTTP_HOST'];
+    if (empty($url)){
+        $protocol = stripos($_SERVER['SERVER_PROTOCOL'],'https')===false ? 'http' : 'https';
+        $port = empty($_SERVER["SERVER_PORT"]) ? '' : ':'.$_SERVER["SERVER_PORT"];
+        $url = $protocol.'://'.$_SERVER['HTTP_HOST'].$port.$_SERVER["REQUEST_URI"];
+    }
     isset($Love->url) || $Love->url=$url;
 
     $urls = pathinfo($url);
 
     $controller = xx;
-    $action = oo;
-    $params = array_slice($pathinfo,3);
+    $action = oo; $params = array_slice($pathinfo,3);
 
     if ($action=){}
     call(array($controller,$action),$params);
