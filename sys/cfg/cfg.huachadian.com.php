@@ -7,37 +7,11 @@
 */
 return array(
     'charset'           => 'UTF-8',
-    'inc_path'          => SYS.'inc/',
-    'cfg_path'          => SYS.'cfg/',
-    'class_path'        => SYS.'inc/',
-    'func_path'         => SYS.'inc/',
-    'log_path'          => SYS.'../log/',
-
-    'log_file_tracy'    => 'tracy.log',
-    'auth_key'          => '12345_Go_Up_Mountain_Fight_Tiger',
-
-    # time format
-    'time_default'      => 'Y-m-d H:i:s',
-    'time_ymdhi'        => 'Y-m-d H:i',
-    'time_ymdh'         => 'Y-m-d H',
-    'time_ymd'          => 'Y-m-d',
-
-
-    # file ext
-    'outer_ext'         => '.html',
-    'inner_ext'         => '.php',
-
-
-    # 0 Disables reporting && log
-    # 1 log
-    # 2 All Output && log
-    'debug_threshold'   => 0,
-
 
     # domain settings
-    'index_domain'      => 'bulaidian.com',
-    'img_domain'        => 'img.bulaidian.com',# array( img0,img1, random
-    'cookie_prefix'     => 'bulaidian_',
+    'index_domain'      => DOMAIN,
+    'img_domain'        => 'img.'.DOMAIN,# array( img0,img1, random
+    'cookie_prefix'     => DOMAIN.'_',
 
     # service config
     'web'        => array(

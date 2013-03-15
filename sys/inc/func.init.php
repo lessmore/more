@@ -5,7 +5,6 @@ Speakup();
 * ------------------------------------------
 *  Speak Up 
 * ------------------------------------------
-* 囧
 */
 function Speakup(){
     defined('LADY') || exit('Need Lady To Keep Moving  :-0');
@@ -30,8 +29,10 @@ function Perfume(){
 
     //前调'中调'尾调
     call('reg', array('top'));
-    call('reg', array('mid');
+    call('reg', array('mid'));
     call('reg', array('low'));
+
+    //call('var_dump', array($Love->error));
 }
 
 
@@ -45,14 +46,18 @@ function Perfume(){
 */
 function client() {
     global $Love;
-
     //Time of start request
     $Love->time = $_SERVER['REQUEST_TIME'];
 
-    //IP ADDR
+    //Bad Request - 
+    if (empty($_SERVER['HTTP_USER_AGENT']) || empty($_SERVER['HTTP_ACCEPT_ENCODING'])) {
+        call('send_header', array(404));
+    }//Ed
+
+    //IP Addr
     if (!empty($_SERVER['HTTP_X_REAL_IP']) && intval($_SERVER['HTTP_X_REAL_IP'])>0) {
         $Love->user_ip = $_SERVER['HTTP_X_REAL_IP'];
-    } else if (!empty($_SERVER['HTTP_X_FORWARDED_FOR']) && ($ips=explode(',',$_SERVER['HTTP_X_FORWARDED_FOR'])) && intval($ips[0])>0 ) { 
+    } else if (!empty($_SERVER['HTTP_X_FORWARDED_FOR']) && ($ips=explode(',',$_SERVER['HTTP_X_FORWARDED_FOR'])) && intval($ips[0])>0) { 
         $Love->user_ip = $ips[0];
     } else if (!empty($_SERVER['HTTP_CLIENT_IP']) && intval($_SERVER['HTTP_CLIENT_IP'])>0) {
         $Love->user_ip = $_SERVER['HTTP_CLIENT_IP'];
@@ -60,51 +65,50 @@ function client() {
         $Love->user_ip = $_SERVER['REMOTE_ADDR'];
     }
 
-    if (preg_match('/^(192\.168|10|127)\./', $Love->user_ip)) {//内网或伪造成内网IP的用户, 127实际只有0,16-31
+    if (preg_match('/^(192\.168|10|127\.(0|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\./', $Love->user_ip)) {//内网或伪造成内网IP的用户, 127实际只有0,16-31
         call('send_header', array(404));
     }//Ed
 
-    //爬虫判断
-    if (!empty($_SERVER['HTTP_USER_AGENT'])) {
-        if (preg_match ( '/Baiduspider|baidu\s+Transcoder|bingbot|MSNbot|Yahoo\!\ Slurp|iaskspider|Sogou[a-zA-Z\s]+spider|Googlebot|YodaoBot|OutfoxBot|ia_archiver|msnbot|P\.    Arthur|QihooBot|Gigabot|360Spider/i', $_SERVER ['HTTP_USER_AGENT'] ))
-        return true;
-    }
+    //Spider
+    preg_match('/Baiduspider|baidu\s+Transcoder|bingbot|MSNbot|Yahoo\!\ Slurp|iaskspider|Sogou[a-zA-Z\s]+spider|Googlebot|YodaoBot|OutfoxBot|ia_archiver|msnbot|P\.    Arthur|QihooBot|Gigabot|360Spider/i', $_SERVER ['HTTP_USER_AGENT'], $Love->spider);
 
-    //Stop Service
-    //404
-    //
-    //
     //Service Unavailable
     //蘑菇施工队抢修中，很快回来！
 
-    //
+    //Terminal
+    //Cli
     if (PHP_SAPI=='cli'){}
-}
 
+    //Web
+    //mobile
+    //Ed
+}
 
 
 /*
 * ------------------------------------------
-* debug
+* Debug
 * ------------------------------------------
-*
 */
 function debug($debug_threshold=0){
+    cfg('debug_threshold'); //算是第一次载入cfg文件
+
     if ($debug_threshold){
         cfg('debug_threshold',$debug_threshold);
     }
 
-    //通过Url打开debug//防止链接被记录,每10分钟的密钥变一次
-    //ladybug=123451749823432432, 17498-5153(5日15点3x分)==12345
-    if (cfg('debug_threshold')==1 or (substr(env('ladybug'),5,5)-date('jHi'))==12345){
+    //通过Url打开debug//防止链接被记录,每10分钟的密钥变一次 //如：ladybug=123451749823432432, 17498-05153(5日15点3x分)==12345
+    if ((substr(env('ladybug'),5,5)-substr(date('jHi'),0,5))==12345){
+        cfg('debug_threshold',2);
+        tracy('!! DEBUG OPENED BY URL QUERY');
+    }
+
+    if (cfg('debug_threshold')>0){
         error_reporting(E_ALL);
         ini_set('display_errors','On');
         ini_set('html_errors','On');
-        cfg('debug_threshold', 1);
-        Tracy('debug opened by url query');
     }
 }
-
 
 
 /*
@@ -112,12 +116,12 @@ function debug($debug_threshold=0){
 *   注册、执行回调/钩子函数
 * ------------------------------------------
 *
-* 传入参数则注册，不传时执行
+* 传入callback则注册，不传时执行
 * Register a function for execution on any time/where
 *
-* 这三是已经定义的执行前后的可注册的回调, 可根据自己需要灵活注册其它的，并在适合的地方时机放置回调
+* 这三是已经定义的执行前后的可注册的回调, 可根据自己需要灵活注册其它的并在代码任何地方放置回调，最后在某个环节触发这些回调
 * | top     前调
-* | mid  中调
+* | mid     中调
 * | low     尾调
 *
 * @param string/array is_callable function name
@@ -129,11 +133,11 @@ function reg($hook,$callback=null,array $arguments=array()){
 
     if ($callback){
         isset($Love->_reg[$hook]) || $Love->_reg[$hook]=array();
-        array_push($Love->_reg[$hook], array('callback'=>$callback,'arguments' => $arguments));
+        array_unshift($Love->_reg[$hook], array('callback' => $callback,'arguments' => $arguments));
         return;
     }
 
-    if ($Love->_reg[$hook]){
+    if (!empty($Love->_reg[$hook])){
         foreach($Love->_reg[$hook] as $k => $v){
             call($v['callback'],$v['arguments']);
         }
@@ -153,25 +157,23 @@ function reg($hook,$callback=null,array $arguments=array()){
 function cfg($key,$value=null){
     global $Love;
 
-    if (!isset($Love->_cfg)){
-        $Love->_cfg = array();
-    }
-
+    isset($Love->_cfg) || $Love->_cfg=array();
     $cfg_name = strtolower($key);
 
     if ($value){
-        $Love->_cfg[$cfg_name] = $value;
-        return $value;
+        return $Love->_cfg[$cfg_name]=$value;
     }
 
     if (isset($Love->_cfg[$cfg_name])){
         return $Love->_cfg[$cfg_name];
     }
 
-    $files = glob(CFG_PATH.'cfg.*.php');
+    //$files = glob(CFG_PATH.'cfg.*.php');
+    $files = array('init',$_SERVER['SERVER_NAME']);//可对单个域名下另配置或覆盖默认
     if (!empty($files)){
         foreach($files as $file){
-            $Love->_cfg = array_merge((array) $Love->_cfg, (array) include $file);
+            $file = SYS.'cfg/cfg.'.$file.'.php';
+            is_file($file) && $Love->_cfg=array_merge((array)$Love->_cfg, (array) include_once $file);
         }
     }
 
@@ -189,51 +191,47 @@ function cfg($key,$value=null){
 * @param string type [option] argv,argc,_post,_get,_cookie,_server_env,_files,_request
 * @param array  options [default value| new value| cookie setting] 
 *
-* if (get_magic_quotes_gpc()) {
-*   //$gpc_variables = array($GLOBALS['_GET'],$GLOBALS['_POST'],$GLOBALS['_cookie']);
-*   //array_walk_recursive( $gpc_variables, create_function('&$v', 'if(is_string($v)){$v=stripslashes($v);}'));
-* }
 */
-function env($key,$type='gpc',$options=array('default'=>null,'value'=>null,'cookie'=>array('expire'=>null,'path'=>null,'domain'=>null))){
-    if (empty($key) or empty($type)){
+function env($key,$type='gpc',array $options=array('default'=>null,'value'=>null,'cookie'=>array('expire'=>null,'path'=>null,'domain'=>null))){
+    if (empty($key) || empty($type)){
         return null;
     }
 
     if (!isset($options['value'])){
         //get
+        $bingo = null;
         switch (false){
-            case !(strpos($type,'g') && isset($_GET[$key])):    $bingo=$_GET[$key];     break;
-            case !(strpos($type,'p') && isset($_POST[$key])):   $bingo=$_POST[$key];    break;
-            case !(strpos($type,'c') && isset($_COOKIE[$key])): $bingo=$_COOKIE[$key];  break;
-            case !(strpos($type,'s') && isset($_SESSION[$key])):$bingo=$_SESSION[$key]; break;
-            case !(strpos($type,'S') && isset($_SERVER[$key])): $bingo=$_SERVER[$key];  break;
-            case !(strpos($type,'E') && isset($_ENV[$key])):    $bingo=$_ENV[$key];     break;
-            case !(strpos($type,'f') && isset($_FILES[$key])):  $bingo=$_FILES[$key];   break;
-            case isset($GLOBALS[$key]):                         $bingo=$GLOBALS[$key];  break;
+            case !(strpos($type,'g')!==false && isset($_GET[$key])):    $bingo=$_GET[$key];     break;
+            case !(strpos($type,'p')!==false && isset($_POST[$key])):   $bingo=$_POST[$key];    break;
+            case !(strpos($type,'c')!==false && isset($_COOKIE[$key])): $bingo=$_COOKIE[$key];  break;
+            case !(strpos($type,'s')!==false && isset($_SESSION[$key])):$bingo=$_SESSION[$key]; break;
+            case !(strpos($type,'S')!==false && isset($_SERVER[$key])): $bingo=$_SERVER[$key];  break;
+            case !(strpos($type,'E')!==false && isset($_ENV[$key])):    $bingo=$_ENV[$key];     break;
+            case !(strpos($type,'f')!==false && isset($_FILES[$key])):  $bingo=$_FILES[$key];   break;
+            case !isset($GLOBALS[$key]):                        $bingo=$GLOBALS[$key];  break;
         }
 
         if (empty($bingo) and $options['default']){
-            return $options['default'];
+            $bingo = $options['default'];
         }
 
-        return $bingo;
+        return trim($bingo);
     }else{
         //set
         switch (false){
-            case !strpos($type,'g'): $_GET[$key]    =$options['value'];break;
-            case !strpos($type,'p'): $_POST[$key]   =$options['value'];break;
-            case !strpos($type,'s'): $_SESSION[$key]=$options['value'];break;
-            case !strpos($type,'S'): $_SERVER[$key] =$options['value'];break;
-            case !strpos($type,'E'): $_ENV[$key]    =$options['value'];break;
-            case !strpos($type,'c'):
-                $_COOKIE[$key]=$options['value'];
-                isset($options['cookie'])||$options['cookie']=array();
-                isset($optoins['cookie']['expire'])||$options['cookie']['expire']=86400;
-                isset($optoins['cookie']['path'])||$options['cookie']['path']='/';
-                isset($optoins['cookie']['domain'])||$options['cookie']['domain']='.';
+            case !strpos($type,'g'): $_GET[$key]     = $options['value']; break;
+            case !strpos($type,'p'): $_POST[$key]    = $options['value']; break;
+            case !strpos($type,'s'): $_SESSION[$key] = $options['value']; break;
+            case !strpos($type,'S'): $_SERVER[$key]  = $options['value']; break;
+            case !strpos($type,'E'): $_ENV[$key]     = $options['value']; break;
+            case !strpos($type,'c'): $_COOKIE[$key]  = $options['value'];
+                isset($options['cookie'])           || $options['cookie'] = array();
+                isset($optoins['cookie']['expire']) || $options['cookie']['expire'] = 0;
+                isset($optoins['cookie']['path'])   || $options['cookie']['path'] = '/';
+                isset($optoins['cookie']['domain']) || $options['cookie']['domain'] = null;
                 setcookie(cfg('cookie_prefix').$key,$options['value'],$options['cookie']['expire'],$options['cookie']['path'],$options['cookie']['domain']);
                 break;
-            default: $GLOBALS[$key]=$options['value'];break;
+            default: $GLOBALS[$key]=$options['value']; break;
         }
 
         return $options['value'];
@@ -244,32 +242,31 @@ function env($key,$type='gpc',$options=array('default'=>null,'value'=>null,'cook
 
 /*
 * ------------------------------------------
-*   call process
+*   call /core
 * ------------------------------------------
 * 
-* 暂不对命名空间支持
+*  暂不对命名空间支持
 *
-* @param string $func_name 调用过程名 三种组合 array(obj,'method')|array('class','method')|function_name
+* @param string $func_name 调用代码 3种组合 array(obj,'method')|array('class','method')|function_name|class::method
 * @param array [args] 传递给方法的参数列表
 */
 function call($func_name, array $func_args=array()){
     try{
-        empty($func_name) || exit("invaild function name");
+        empty($func_name) && exit("!!Empty function name");
 
         if (is_array($func_name)){
             list($class_name,$method) = $func_name;
             
-            //array('class','method')处理
+            //array('class','method') 处理
             if (is_string($class_name)){
                 if (!class_exists($class_name)){
-                    //load classes
+                    //Load file
                     if (strpos($class_name,'_')!==false){
-                        $class_file = getcwd().'/'.str_replace('_','/',$class_name);//MVC
+                        $class_file = getcwd().'/'.str_replace('_','/',$class_name).'.php';//MVC
                     }else{
                         $class_file = cfg('class_path').'class.'.strtolower($class_name).'.php';//SYS
                     }
-
-                    if (is_file($class_file))
+                    if (is_file($class_file)){
                         require_once $class_file;
                     }//Ed
                 }
@@ -278,38 +275,52 @@ function call($func_name, array $func_args=array()){
                 $func_name = array($obj,$method);
             }//Ed
         }else{
-            if (!function_exists($func_name)){
-                //load functions
-                $files = glob(cfg('func_path').'func.*.php');
-
-                if (!empty($files)){
-                    foreach($files as $v){
-                        require_once $v;
+            //class::method 处理
+            if ($pos=strpos($func_name,'::')){
+                if (!class_exists($class_name)){
+                    $class_file = substr($class_name,0,$pos);
+                    $class_file = getcwd().'/'.str_replace('_','/',$class_file).'.php';//MVC
+                    if (is_file($class_file)){
+                        require_once $class_file;
                     }
-                }//Ed
-            }
+                }
+            }//Ed
+            //general method
+            else{
+                if (!function_exists($func_name)){
+                    //load functions
+                    $files = glob(cfg('func_path').'func.*.php');
+
+                    if (!empty($files)){
+                        foreach($files as $v){
+                            require_once $v;
+                        }
+                    }//Ed
+                }
+            }//Ed
         }
 
         //参数2:false的意图为仅当函数或方法可真实调用时才返回true，举个例子，私有方法外部调用is_callable将返回false! 默认为false。
         //另外一点，对于非静态方法的声明，$call_name也会返回可调用形式class::method，所以即使你NB的想用静态，也不用刻意去声明静态。
         if (is_callable($func_name,false,$call_name)){
-            $return = call_user_func_array($call_name,$func_args);
-            $info = "$call_name called sucess!";
+            $return = call_user_func_array($func_name,$func_args);
+            $info = "[√] [call] $call_name";
         }else{
-            $info = "$call_name called falied! is not callable!!";
+            $return = null;
+            $info = "[×] [call] $call_name";
         }
-    } catch(exception $e) {
+    } catch(Exception $e) {
         $info = $e->getMessage()." ".$e->getFile()." on Line ".$e->getLine()."----".$e->getCode()."----".$e->getTrace()."----".$e->getTraceAsString();
     }
 
-    if (cfg('debug_threshold')==1){
-        $info .= var_export($func_args,1);
-    }
+    $info .= '  [args] '.var_export($func_args,1);
+    $info .= get_last_error();
 
-    Tracy($info);
+    //global $Love;
+    //$Love->time()-time();
+    register_shutdown_function('tracy',$info);
     return $return;
 }
-
 
 
 /*
@@ -322,50 +333,139 @@ function call($func_name, array $func_args=array()){
 * @param string $info
 */
 function Tracy($info){
-    $info = date("Y-m-d, H:d:s")." ".$info.PHP_EOL;
-    //$trace = debug_backtrace();
+    global $Love;
 
-    if (cfg('debug_threshold') === 1){
+    if (!is_string($info)){
+        $info = var_export($info,true);
+    }
+
+    $trace = array_reverse(debug_backtrace());
+    //foreach($trace as $k => $v){
+        //echo '|['.basename($v['file']).'.'.$v['line'].']';
+        //echo ' call '.$v['function'];
+        //echo ', args ';
+        //echo str_replace(PHP_EOL,'',var_export($info,1));
+        //echo "|\n";
+    //}
+    $error = get_last_error();
+    strpos($info,$error) || $info .= $error;
+    $info = date("Y-m-d, H:d:s")." ".str_replace(array(PHP_EOL,dirname(SYS).'/'),'',$info).PHP_EOL;
+
+    isset($Love) || $Love->error=array();
+    $Love->error[] = $info;
+    
+    if (cfg('debug_threshold') === 2){
         echo nl2br($info);
     }
-    $info = $info.' ['.implode(' ',error_get_last()).']';
-    
-    file_put_contents(cfg('log_path').date('Ymd').'/'.cfg('log_file_tracy'),$info,FILE_APPEND);
+
+    // 阀值>0或者有且每60秒记录一次日志
+    if (cfg('debug_threshold')>0 || $Love->time%60<1){
+        $dir = cfg('log_path').date('Ymd').'/';
+        is_dir($dir) || mkdir($dir,0777,true);
+        file_put_contents($dir.cfg('log_file_tracy'),$info,FILE_APPEND);
+    }
 }
 
 
+function get_last_error(){
+    if ($error = error_get_last()){
+        $error_type = array (
+            E_ERROR             => 'ERROR',
+            E_WARNING           => 'WARNING',
+            E_PARSE             => 'PARSING ERROR',
+            E_NOTICE            => 'NOTICE',
+            E_CORE_ERROR        => 'CORE ERROR',
+            E_CORE_WARNING      => 'CORE WARNING',
+            E_COMPILE_ERROR     => 'COMPILE ERROR',
+            E_COMPILE_WARNING   => 'COMPILE WARNING',
+            E_USER_ERROR        => 'USER ERROR',
+            E_USER_WARNING      => 'USER WARNING',
+            E_USER_NOTICE       => 'USER NOTICE',
+            E_STRICT            => 'STRICT NOTICE',
+            E_RECOVERABLE_ERROR => 'RECOVERABLE ERROR'
+        );
+        $error['type'] = '['.$error_type[$error['type']].']';
+        return '  '.implode(' ',$error);
+    }
+    return null;
+}
 
-//baidu.com/error/404.html
-//baidu.com/error/503.html
-//baidu.com/404.html
-//baidu.com/index/404.html
-//baidu.com/404/index.html
-//baidu.com/star.fdfs/meifd_fbdfd/xxxx
-//目录深度 权重
-//所以要无耻成这样吗 controller-method-arg1-arg2.html
-//http://www.seochat.org/mobile/nokia/n95.htm的URL长度=7+15+14+7，即43
-//http://www.seochat.org/mobile/nokia/n95.htm  =》 pinpai/tianfu/babaoju.html =》 pinpai-tianfu-babaoju.html
-function router($url=null,$route_rule=''){
+
+/*
+* ------------------------------------------
+*  Router
+* ------------------------------------------
+* 
+* @param string $url path?query#anchor | http://domain/path?query
+* @param string $route_rule url parse
+*/
+function router($request_uri=null,$route_rule=''){
     global $Love;
 
-    if (empty($route_rule)){
-       $route_rule="application/controller/action/arg1/arg2/arg3/.html)";
+    empty($route_rule) && $route_rule="/dir-file--act/arg-arg-arg.html?abc=cbd"; //模型定制暂缓
+    isset($Love->route_rule) || $Love->route_rule=$route_rule;
+
+    empty($request_uri) && $request_uri=$_SERVER['REQUEST_URI']; 
+    isset($Love->url) || $Love->url=$request_uri;
+ 
+    $uri = pathinfo(trim($request_uri));
+
+    if (substr($request_uri,-1,1)!=='/' && isset($uri['extension']) && strpos($uri['extension'],'htm')!==0){
+        call('send_header', array(404)); //.php?abc 禁止非htm/html解析  =======  /xxx.html/  当作目录处理  PS:/xx.html/?x=y 这种本来xx.html就当目录处理
+    }                                                    
+
+    if ($uri['dirname'] =='/'){
+        $controller = '';
+    }else{
+        $controller = explode('-',$route_rule['dirname']);
+        $action = array_pop($controller);
+        $controller = implode('_',$controller);
     }
-    isset($Love->route_rule)||$Love->route_rule=$route_rule;
 
-    if (empty($url)){
-        $protocol = stripos($_SERVER['SERVER_PROTOCOL'],'https')===false ? 'http' : 'https';
-        $port = empty($_SERVER["SERVER_PORT"]) ? '' : ':'.$_SERVER["SERVER_PORT"];
-        $url = $protocol.'://'.$_SERVER['HTTP_HOST'].$port.$_SERVER["REQUEST_URI"];
+    $arguments = $uri['filename']=='' ? '' : explode('-', $uri['filename']);
+
+    empty($controller) && $controller='index';
+    empty($action)     && $action='index';
+    empty($arguments)  && $arguments=array();
+
+    call(array('c_'.$controller, $action),$arguments);
+}
+
+
+/** 
+* ------------------------------------------
+* 设置HTTP
+* ------------------------------------------
+*
+* @param int $code HTTP
+* @see http_response_code() >=php5.4
+*/
+function send_header($code){
+    $http_code = array(
+        204 => 'No Content',        //无言以对
+        301 => 'Moved Permanently', //本地址永久性转移到另一个地址
+        302 => 'Found',             //暂时转向到另外一个网址。一个不道德的人在他自己的网址A做一个302重定向到你的网址B，出于某种原因， Google搜索结果所显示的仍然是网址A，
+        303 => 'See Other',         //但是所用的网页内容却是你的网址B上的内容，这种情况就叫做网址URL劫持。你辛辛苦苦所写的内容就这样被别人偷走了。
+        304 => 'Not Modified',
+        400 => 'Bad Request',       //可在密码验证错误之类的情况返回
+        401 => 'Unauthorized',
+        402 => 'Payment Required',
+        403 => 'Forbidden',
+        404 => 'Not Found',
+        500 => 'Internal Server Error',
+        501 => 'Not Implemented',
+        502 => 'Bad Gateway',
+        503 => 'Service Unavailable',
+        504 => 'Gateway Timeout'
+    );
+
+    if (isset($http_code[$code])){
+        header('HTTP/1.1 ' . $code . ' '.$http_code[$code], true, $code);
     }
-    isset($Love->url) || $Love->url=$url;
 
-    $urls = pathinfo($url);
+    if (in_array($code,array(204,400,403,404,500,502,503,504))){
+        tracy($_SERVER); //把问题客户端特征保存下来，主要的MD5，避免多次保存
+    }
 
-    $controller = xx;
-    $action = oo; $params = array_slice($pathinfo,3);
-
-    if ($action=){}
-    call(array($controller,$action),$params);
-    call('sent_header',array(404));
+    call('exit');
 }

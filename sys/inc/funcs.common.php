@@ -2,29 +2,57 @@
 SpeakUp();
 
 /*
+* ---------------------------
+* Todo
+* _--------------------------
+*
+*
+* 我们知道有图片合并来节约浏览器链接这件事
+*  对于css,js我们也可以这样来处理
+*
+*
+*  header etag
+*
+*
+* if (get_magic_quotes_gpc()) {
+*   //$gpc_variables = array($_GET,$_POST,$_COOKIE);
+*   //array_walk_recursive( $gpc_variables, create_function('&$v', 'if(is_string($v)){$v=mysql_real_escape_string(stripslashes($v));}'));
+* }
+* binary,varbinary,BLOB 设置二进制，无字节区别 char,varchar,text, 二进制可以直接拼音排序@@
+* xss，及sql injection分别放到最后的步聚处理。。减少无谓的资源浪费。。如send|query内部
+*
+async
+$pid = pcntl_fork();
+if($pid == -1){
+         //创建失败咱就退出呗,没啥好说的
+         die('could not fork');
+}
+else{
+        if($pid){
+                //从这里开始写的代码是父进程的,因为写的是系统程序,记得退出的时候给个返回值
+                exit(0);
+        }
+        else{
+                //从这里开始写的代码都是在新的进程里执行的,同样正常退出的话,最好也给一个返回值
+                exit(0);
+        }
+}
+*  
+*/
+
+/*
 * ----------------------------------------
 *   Log process trace
 * -----------------------------------------
 *
-* fwrite(STDOUT, "Enter your name: ");
-* $name = trim(fgets(STDIN));
-* fwrite(STDOUT, "Hello, $name!");
 */
 function mark($info,$file){
-    call(array('webapi','log'),array($info,$file));
+    //call(array('webapi','log'),array($info,$file));
+    $info = date("Y-m-d, H:d:s")." ".var_export($info,1).PHP_EOL;
 
-    //chmod($file,0755);
-    //Add the month to the directory
-    //$directory .= DIRECTORY_SEPARATOR.date('m');
-
-    //if ( ! is_dir($directory))
-    //{   
-        //Create the yearly directory
-        //mkdir($directory, 02777);
-
-        //Set permissions (must be manually set to fix umask issues)
-        //chmod($directory, 02777);
-    //}  
+    $dir = cfg('log_path').date('Ymd').'/';
+    is_dir($dir) || mkdir($dir,0777,true);
+    file_put_contents($dir.$file,$info,FILE_APPEND);
 }
 
 
@@ -39,35 +67,47 @@ function mark($info,$file){
 * @param   array append_query 设置自动追加的参数，如链接中出现在debug的参数，则页面上的链接都自动加上debug的参数
 * @param   string domain_prefix 多级域名选择，默认当前域名
 * @return  string
+* @extra
+
+* //$protocol = stripos($_SERVER['SERVER_PROTOCOL'],'HTTPS')===false ? 'http' : 'https';
+* //$port = (empty($_SERVER["SERVER_PORT"]) or $_SERVER['SERVER_PORT']==80) ? '' : ':'.$_SERVER["SERVER_PORT"];
+* //$url = $protocol.'://'.$_SERVER['HTTP_HOST'].$port.$_SERVER["REQUEST_URI"];
+* //#anchor client-only not sent to server
+* 
 */
-function url($url='',$url_options=array('prepend'=>array(),'append'=>array(),'domain'=>'')){
+function url($url='',$url_options=array('subtract'=>array(),'prepend'=>array(),'append'=>array(),'domain'=>'')){
     $url = '';
     $query = array();
-    $domain = $query_options['domain'];
-    $query_prepend = $query_options['prepend'];
-    $query_append = $query_options['append'];
+    $query_subtract = empty($query_options['subtract']) ? '':$query_options['subtract'];
+    $query_prepend = empty($query_options['prepend']) ? '':$query_options['prepend'];
+    $query_append = empty($query_options['append']) ? '':$query_options['append'];
+    $domain = empty($query_options['domain']) ? '':$query_options['domain'];
 
-    if ($domain){
-        $url = $domain.$url;
-    }
-
-    if (is_array($query_prepend)){
-        $query[] = http_build_query($query_prepend);
-    }
-
-    array_unshift((array)$query_append, array(cfg('debug_name')));
-
-    $query_append_map = array();
-    foreach ($query_append as $k => $v){
-        if ($value=env($v)){
-            $query_append_map[$v] = urlencode($value);
+    //
+    if ($query_subtract){
+        foreach($query_subtract as $k => $v){
+            $url = preg_replace("/".$v."&=[^&]*/", $url);
         }
     }
 
-    if (!empty($query_append_map)){
-        $qeury[] = http_build_query($query_append_map);
+    //
+    if (is_array($query_append)){
+        $query[] = http_build_query($query_append);
     }
 
+    //
+    $query_prepend_map = array();
+    array_unshift((array)$query_prepend, array(cfg('debug_name')));
+    foreach ($query_prepend as $k => $v){
+        if ($value=env($v)){
+            $query_prepend_map[$v] = urlencode($value);
+        }
+    }
+    if (!empty($query_prepend_map)){
+        $qeury[] = http_build_query($query_prepend_map);
+    }
+
+    //
     if (!empty($query)){
         if (strpos($url,'?')===false){
             $url .= '?';
@@ -78,6 +118,11 @@ function url($url='',$url_options=array('prepend'=>array(),'append'=>array(),'do
         }else{
             $url .= implode('&',$query);
         }
+    }
+
+    //
+    if ($domain){
+        $url = $domain.$url;
     }
 
     return $url;
@@ -95,30 +140,6 @@ function html_echo($echo){
 }
 
 
-/*
-* ----------------------------------------
-*   get ip address
-* -----------------------------------------
-*
-* @modify from dz
-*/
-function get_ip(){
-    if(getenv('HTTP_CLIENT_IP') && strcasecmp(getenv('HTTP_CLIENT_IP'), 'unknown')) {
-    	$onlineip = getenv('HTTP_CLIENT_IP');
-    } elseif(getenv('HTTP_X_FORWARDED_FOR') && strcasecmp(getenv('HTTP_X_FORWARDED_FOR'), 'unknown')) {
-    	$onlineip = getenv('HTTP_X_FORWARDED_FOR');
-    } elseif(getenv('REMOTE_ADDR') && strcasecmp(getenv('REMOTE_ADDR'), 'unknown')) {
-    	$onlineip = getenv('REMOTE_ADDR');
-    } elseif(isset($_SERVER['REMOTE_ADDR']) && $_SERVER['REMOTE_ADDR'] && strcasecmp($_SERVER['REMOTE_ADDR'], 'unknown')) {
-    	$onlineip = $_SERVER['REMOTE_ADDR'];
-    }
-
-    preg_match("/[\d\.]{7,15}/", $onlineip, $onlineipmatches);
-    $onlineip = $onlineipmatches[0] ? $onlineipmatches[0] : 'unknown';
-    unset($onlineipmatches);
-
-    return $onlineip;
-}
 
 /*
 * ----------------------------------------
@@ -279,7 +300,7 @@ function is_email($email) {
 *
 * @param string grep=keyword,keyword |[all -> show all]
 */
-function showIncTree(){
+function show_inc_file(){
     $base = dirname(getcwd()); 
     $sofa = get_included_files();
     $default_show = array('view');
@@ -404,7 +425,11 @@ private static function checkXML($xmlfile){
             echo var_export($dbr,1);
             echo "\n";
             echo "操作的源数据在操作前会保存到文件 /var/www/logs/crond/".date('Ymd')."/".$sqlLog."\n\n";
-            echo "确认请执行: \nphp crond.php Crond_dao::call sql \"".$sql."\" $unikey";
+            fwrite(STDOUT, "确认执行请输入yes: ");
+            $name = trim(fgets(STDIN));//fwrite(STDOUT, "Hello, $name!");
+            if ($name=='yes'){
+                system("php crond.php Crond_dao::call sql \"".$sql."\" $unikey");
+            }
 
         }catch(exception $e){
             var_dump($e);
@@ -412,14 +437,10 @@ private static function checkXML($xmlfile){
     }
 
 
-    function CLIinit(){
+    function Ccall(){
         self::$db = Zpdo::instance();
         self::$cache = Zcache::instance();
         self::$args = array_slice($GLOBALS['argv'],2);
-    }
-
-    function Ccall(){
-        self::init();
 
         empty(self::$args[0]) && exit("invaild function name");
         $func_name = self::$args[0];
@@ -430,7 +451,6 @@ private static function checkXML($xmlfile){
             $info = "\n\nStatic function $func_name called";
 
         } catch(exception $e) {
-            $info = "[".date("Y-m-d, H:d:s")."] ".$e->getMessage().$e->getFile()." on Line ".$e->getLine()."----".$e->getMessage()."----".$e->getCode()."----".$e->getFile()."----".$e->getLine()."----".$e->getTrace()."----".$e->getTraceAsString()."\n";
         }
 
         exit($info);
@@ -686,82 +706,12 @@ function array_cols(array $value, $key, $key_new='') {
 
 
 
-    /** 
-     * 设置HTTP状态
-     *
-     *
-     * @access public
-     * @param integer $code http代码
-     * @return void
-     * @see http_response_code() >=php5.4
-     */
-    public static function send_header($code)
-    {   
-        $http_code = array(
-            204 => 'No Content',//无言以对
-            301 => 'Moved Permanently',//本网页永久性转移到另一个地址
-            302 => 'Found',//暂时转向到另外一个网址。一个不道德的人在他自己的网址A做一个302重定向到你的网址B，出于某种原因， Google搜索结果所显示的仍然是网址A，但是所用的网页内容却是你的网址B上的内容，这种情况就叫做网址URL劫持。你辛辛苦苦所写的内容就这样被别人偷走了。u
-            303 => 'See Other',
-            304 => 'Not Modified',
-            400 => 'Bad Request',//可在密码验证错误之类的情况返回
-            401 => 'Unauthorized',
-            402 => 'Payment Required',
-            403 => 'Forbidden',
-            404 => 'Not Found',
-            500 => 'Internal Server Error',
-            501 => 'Not Implemented',
-            502 => 'Bad Gateway',
-            503 => 'Service Unavailable',
-            504 => 'Gateway Timeout'
-        );
-        if (isset($http_code[$code])) {
-            header('HTTP/1.1 ' . $code . ' ' . self::$_httpCode[$code], true, $code);
-        }
 
-        exit;
-    }
-
-
-    /**
-     * 抛出json回执信息
-     *
-     * @access public
-     * @param string $message 消息体
-     * @return void
-     */
-    public function throwJson($message)
-    {
-        /** 设置http头信息 */
-        $this->setContentType('application/json');
-
-        /** Typecho_Json */
-        require_once 'Typecho/Json.php';
-        echo Typecho_Json::encode($message);
-
-        /** 终止后续输出 */
-        exit;
-    }
-
-
-function redirect($url='/',$fkCache=0){
-    $url_ops = $fkCache ? array('prepend' => array('fk' => uniqid())) : array();
+function redirect($url='/',$kCache=0){
+    $url_ops = $kCache ? array('prepend' => array('fk' => uniqid())) : array();
     header("Location: ".url($url,$url_ops), TRUE, 302);
     exit;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -772,8 +722,7 @@ function redirect($url='/',$fkCache=0){
  * @access public
  * @return boolean
  */
-function isAjax()
-{   
+function isAjax(){
     return 'XMLHttpRequest' == env('HTTP_X_REQUESTED_WITH','es');
 }  
 
@@ -827,7 +776,7 @@ function cutstr($str,$length,$more="..."){
 
 
 //异步
-function async($command,array $args=array(), array $callback=array('shell'=>'','web'=>'','method'=>'',null=>false)){
+function async($command,array $args=array(), array $callback=array('shell'=>'','http'=>'')){
 
     if (is_shell($command)){
         system($command);
@@ -847,7 +796,7 @@ function async($command,array $args=array(), array $callback=array('shell'=>'','
 
 
 function pro_start(){
-    $time = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];//@PHP 5.4
+    //$time = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];//@PHP 5.4
     define('START_MEMORY', memory_get_usage());
     define('START_TIME', microtime(TRUE));
     xhprof_enable();

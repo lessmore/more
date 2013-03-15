@@ -30,6 +30,8 @@ date_default_timezone_set("Asia/Shanghai");
 require SYS.'inc/func.init.php';
 
 /*
+require_once __DIR__.'/../../sys/init.php';
+
 call('reg', array('top',array('debug',1)));
 call('reg', array('top',array('pro_start')));
 call('reg', array('top',array('showIncTree')));
