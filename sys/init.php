@@ -18,16 +18,16 @@
 | @require PHP 5.3
 */
 header('Content-type:text/html; Charset=UTF-8');
+date_default_timezone_set("Asia/Shanghai");
+error_reporting(0);
 
 define('LADY', 'Miss You Much');
 define('SYS', __DIR__.'/'); //dirname(__FILE__);//php 5.3-- //set_magic_quotes_runtime(false);//php 5.3 --
 
-$Love = (object) NULL;  //定义一个全局对象变量,加(object)只是为了强调
-
-error_reporting(0);
-date_default_timezone_set("Asia/Shanghai");
+$Love = (object) NULL; //定义一个全局对象变量,加(object)只是为了强调, 业务上约定以_开头来定义
 
 require SYS.'inc/func.init.php';
+
 
 /*
 require_once __DIR__.'/../../sys/init.php';
