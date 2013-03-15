@@ -82,6 +82,10 @@ function client() {
     //Web
     //mobile
     //Ed
+
+    //定制随机触发
+    $Love->hit= ($Love->time%60)<1;//60s有且有一次
+
 }
 
 
@@ -124,6 +128,7 @@ function debug($debug_threshold=0){
 * | mid     中调
 * | low     尾调
 *
+* @todo 同样的方法名参数不同，是设计成重载好呢还是覆盖好呢
 * @param string/array is_callable function name
 * @param array args
 */
@@ -208,7 +213,7 @@ function env($key,$type='gpc',array $options=array('default'=>null,'value'=>null
             case !(strpos($type,'S')!==false && isset($_SERVER[$key])): $bingo=$_SERVER[$key];  break;
             case !(strpos($type,'E')!==false && isset($_ENV[$key])):    $bingo=$_ENV[$key];     break;
             case !(strpos($type,'f')!==false && isset($_FILES[$key])):  $bingo=$_FILES[$key];   break;
-            case !isset($GLOBALS[$key]):                        $bingo=$GLOBALS[$key];  break;
+            case !isset($GLOBALS[$key]): $bingo=$GLOBALS[$key]; break;
         }
 
         if (empty($bingo) and $options['default']){
@@ -313,7 +318,7 @@ function call($func_name, array $func_args=array()){
         $info = $e->getMessage()." ".$e->getFile()." on Line ".$e->getLine()."----".$e->getCode()."----".$e->getTrace()."----".$e->getTraceAsString();
     }
 
-    $info .= '  [args] '.var_export($func_args,1);
+    $info .= ' [args] '.var_export($func_args,1);
     $info .= get_last_error();
 
     //global $Love;
@@ -348,8 +353,8 @@ function Tracy($info){
         //echo "|\n";
     //}
     $error = get_last_error();
-    strpos($info,$error) || $info .= $error;
-    $info = date("Y-m-d, H:d:s")." ".str_replace(array(PHP_EOL,dirname(SYS).'/'),'',$info).PHP_EOL;
+    strpos($info,$error) || $info .= ' '.$error;
+    $info = date("Y-m-d, H:d:s")." ".str_replace(array(PHP_EOL,dirname(SYS).'/','  '),array('','',' '),$info).PHP_EOL;
 
     isset($Love) || $Love->error=array();
     $Love->error[] = $info;
@@ -358,8 +363,8 @@ function Tracy($info){
         echo nl2br($info);
     }
 
-    // 阀值>0或者有且每60秒记录一次日志
-    if (cfg('debug_threshold')>0 || $Love->time%60<1){
+    //阀值>0或者定点
+    if (cfg('debug_threshold')>0 || $Love->hit){
         $dir = cfg('log_path').date('Ymd').'/';
         is_dir($dir) || mkdir($dir,0777,true);
         file_put_contents($dir.cfg('log_file_tracy'),$info,FILE_APPEND);
@@ -385,7 +390,7 @@ function get_last_error(){
             E_RECOVERABLE_ERROR => 'RECOVERABLE ERROR'
         );
         $error['type'] = '['.$error_type[$error['type']].']';
-        return '  '.implode(' ',$error);
+        return implode(' ',$error);
     }
     return null;
 }
