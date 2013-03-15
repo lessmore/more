@@ -13,19 +13,19 @@ function Speakup(){
 
 /*
 * ------------------------------------------
-* 香水 perfume
+*  香水 perfume
 * ------------------------------------------
 * 
-* 前调 top note
-* 中调 mid note
-* 尾调 low note
+*  前调 top note
+*  中调 mid note
+*  尾调 low note
 *
 */
 function Perfume(){
     //调制(默认)
-    call('reg', array('top','client'));
-    call('reg', array('top','debug'));
-    call('reg', array('mid','router'));
+    //call('reg', array('top','client'));
+    //call('reg', array('mid','router'));
+    call('router');die;
 
     //前调'中调'尾调
     call('reg', array('top'));
@@ -46,13 +46,19 @@ function Perfume(){
 */
 function client() {
     global $Love;
+
     //Time of start request
     $Love->time = $_SERVER['REQUEST_TIME'];
 
-    //Bad Request - 
+    //Terminal//Web//mobile//Ed
+    $Love->is_cli = (PHP_SAPI=='cli');
+    $Love->is_ajax = ('XMLHttpRequest'==$_SERVER['HTTP_X_REQUESTED_WITH']);
+    $Love->is_flash = (strpos($_SERVER['USER_AGENT'],'Shockwave Flash')!==false);
+
+    //Client Fileter ----
     if (empty($_SERVER['HTTP_USER_AGENT']) || empty($_SERVER['HTTP_ACCEPT_ENCODING'])) {
         call('send_header', array(404));
-    }//Ed
+    }
 
     //IP Addr
     if (!empty($_SERVER['HTTP_X_REAL_IP']) && intval($_SERVER['HTTP_X_REAL_IP'])>0) {
@@ -65,7 +71,8 @@ function client() {
         $Love->user_ip = $_SERVER['REMOTE_ADDR'];
     }
 
-    if (preg_match('/^(192\.168|10|127\.(0|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\./', $Love->user_ip)) {//内网或伪造成内网IP的用户, 127实际只有0,16-31
+    //内网或伪造成内网IP的用户, 127实际只有0,16-31
+    if (preg_match('/^(192\.168|10|127\.(0|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\./', $Love->user_ip)) {
         call('send_header', array(404));
     }//Ed
 
@@ -73,36 +80,12 @@ function client() {
     preg_match('/Baiduspider|baidu\s+Transcoder|bingbot|MSNbot|Yahoo\!\ Slurp|iaskspider|Sogou[a-zA-Z\s]+spider|Googlebot|YodaoBot|OutfoxBot|ia_archiver|msnbot|P\.    Arthur|QihooBot|Gigabot|360Spider/i', $_SERVER ['HTTP_USER_AGENT'], $Love->spider);
 
     //Service Unavailable
-    //蘑菇施工队抢修中，很快回来！
+    //Call('send_header', array(503));
 
-    //Terminal
-    //Cli
-    if (PHP_SAPI=='cli'){}
-
-    //Web
-    //mobile
-    //Ed
-
-    //定制随机触发
-    $Love->hit= ($Love->time%60)<1;//60s有且有一次
-
-}
-
-
-/*
-* ------------------------------------------
-* Debug
-* ------------------------------------------
-*/
-function debug($debug_threshold=0){
-    cfg('debug_threshold'); //算是第一次载入cfg文件
-
-    if ($debug_threshold){
-        cfg('debug_threshold',$debug_threshold);
-    }
+    //Client Fileter End
 
     //通过Url打开debug//防止链接被记录,每10分钟的密钥变一次 //如：ladybug=123451749823432432, 17498-05153(5日15点3x分)==12345
-    if ((substr(env('ladybug'),5,5)-substr(date('jHi'),0,5))==12345){
+    if (env('ladybug','g') && (substr(env('ladybug','g'),5,5)-substr(date('jHi'),0,5))==12345){
         cfg('debug_threshold',2);
         tracy('!! DEBUG OPENED BY URL QUERY');
     }
@@ -112,6 +95,10 @@ function debug($debug_threshold=0){
         ini_set('display_errors','On');
         ini_set('html_errors','On');
     }
+
+    //触发设定
+    $Love->sample_s_1_60 = ($Love->time%60)<1;
+    $Love->sample_r_1_1000= rand(1,1000)%999;
 }
 
 
@@ -134,16 +121,16 @@ function debug($debug_threshold=0){
 */
 function reg($hook,$callback=null,array $arguments=array()){
     global $Love;
-    isset($Love) || $Love->_reg=array('top' => array(),'mid' => array(),'low' => array());
+    isset($Love) || $Love->reg=array('top' => array(),'mid' => array(),'low' => array());
 
     if ($callback){
-        isset($Love->_reg[$hook]) || $Love->_reg[$hook]=array();
-        array_unshift($Love->_reg[$hook], array('callback' => $callback,'arguments' => $arguments));
+        isset($Love->reg[$hook]) || $Love->reg[$hook]=array();
+        array_unshift($Love->reg[$hook], array('callback' => $callback,'arguments' => $arguments));
         return;
     }
 
-    if (!empty($Love->_reg[$hook])){
-        foreach($Love->_reg[$hook] as $k => $v){
+    if (!empty($Love->reg[$hook])){
+        foreach($Love->reg[$hook] as $k => $v){
             call($v['callback'],$v['arguments']);
         }
     }
@@ -162,40 +149,36 @@ function reg($hook,$callback=null,array $arguments=array()){
 function cfg($key,$value=null){
     global $Love;
 
-    isset($Love->_cfg) || $Love->_cfg=array();
+    isset($Love->cfg) || $Love->cfg=array();
     $cfg_name = strtolower($key);
 
-    if ($value){
-        return $Love->_cfg[$cfg_name]=$value;
-    }
-
-    if (isset($Love->_cfg[$cfg_name])){
-        return $Love->_cfg[$cfg_name];
-    }
-
-    //$files = glob(CFG_PATH.'cfg.*.php');
-    $files = array('init',$_SERVER['SERVER_NAME']);//可对单个域名下另配置或覆盖默认
-    if (!empty($files)){
-        foreach($files as $file){
-            $file = SYS.'cfg/cfg.'.$file.'.php';
-            is_file($file) && $Love->_cfg=array_merge((array)$Love->_cfg, (array) include_once $file);
+    if (!isset($Love->cfg[$cfg_name])){
+        $files = array('init',$_SERVER['SERVER_NAME']);//可对单个域名下另配置或覆盖默认//$files = glob(CFG_PATH.'cfg.*.php');
+        if (!empty($files)){
+            foreach($files as $file){
+                $file = SYS.'cfg/cfg.'.$file.'.php';
+                is_file($file) && $Love->cfg=array_merge((array)$Love->cfg, (array) include_once $file);
+            }
         }
     }
 
-    return isset($Love->_cfg[$cfg_name]) ? $Love->_cfg[$cfg_name] : null;
+    if ($value){
+        return $Love->cfg[$cfg_name]=$value;
+    }
+
+    return isset($Love->cfg[$cfg_name]) ? $Love->cfg[$cfg_name] : null;
 }
 
 
 
 /*
 * ------------------------------------------
-*   Get/Set environment variable
+*  Get/Set environment variable
 * ------------------------------------------
 *
 * @param string environment name
 * @param string type [option] argv,argc,_post,_get,_cookie,_server_env,_files,_request
 * @param array  options [default value| new value| cookie setting] 
-*
 */
 function env($key,$type='gpc',array $options=array('default'=>null,'value'=>null,'cookie'=>array('expire'=>null,'path'=>null,'domain'=>null))){
     if (empty($key) || empty($type)){
@@ -250,9 +233,10 @@ function env($key,$type='gpc',array $options=array('default'=>null,'value'=>null
 *   call /core
 * ------------------------------------------
 * 
-*  暂不对命名空间支持
+*  不对命名空间支持
+*  array('self','method'),'self::method'方式只在类的内部用call_user_func_array才能有效调用，故这里不支持
 *
-* @param string $func_name 调用代码 3种组合 array(obj,'method')|array('class','method')|function_name|class::method
+* @param string $func_name 调用代码 4种组合 array($obj,'method') | array('class','method') | 'class::method',array($this,'self::dior') | function
 * @param array [args] 传递给方法的参数列表
 */
 function call($func_name, array $func_args=array()){
@@ -261,8 +245,8 @@ function call($func_name, array $func_args=array()){
 
         if (is_array($func_name)){
             list($class_name,$method) = $func_name;
-            
-            //array('class','method') 处理
+
+            //array('className','method') 处理
             if (is_string($class_name)){
                 if (!class_exists($class_name)){
                     //Load file
@@ -279,18 +263,21 @@ function call($func_name, array $func_args=array()){
                 $obj = new $class_name;
                 $func_name = array($obj,$method);
             }//Ed
+
+            //array(obj, 'method') 略处理
         }else{
-            //class::method 处理
+            //'className::method' 处理 
             if ($pos=strpos($func_name,'::')){
-                if (!class_exists($class_name)){
-                    $class_file = substr($class_name,0,$pos);
-                    $class_file = getcwd().'/'.str_replace('_','/',$class_file).'.php';//MVC
+                $class_name = substr($func_name,0,$pos);
+
+                if (!class_exists($class_name)){//在ClassName的类内部自调是不会加载文件的
+                    $class_file = getcwd().'/'.str_replace('_','/',$class_name).'.php';//MVC
                     if (is_file($class_file)){
                         require_once $class_file;
                     }
                 }
             }//Ed
-            //general method
+            //'functionName' 处理
             else{
                 if (!function_exists($func_name)){
                     //load functions
@@ -364,7 +351,7 @@ function Tracy($info){
     }
 
     //阀值>0或者定点
-    if (cfg('debug_threshold')>0 || $Love->hit){
+    if (cfg('debug_threshold')>0 || $Love->sample_s_1_60){
         $dir = cfg('log_path').date('Ymd').'/';
         is_dir($dir) || mkdir($dir,0777,true);
         file_put_contents($dir.cfg('log_file_tracy'),$info,FILE_APPEND);
@@ -432,6 +419,9 @@ function router($request_uri=null,$route_rule=''){
     empty($controller) && $controller='index';
     empty($action)     && $action='index';
     empty($arguments)  && $arguments=array();
+    $Love->controller = $controller;
+    $Love->action = $action;
+    $Love->args = $arguments;
 
     call(array('c_'.$controller, $action),$arguments);
 }

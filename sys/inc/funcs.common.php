@@ -285,10 +285,10 @@ function dfopen($url, $limit = 0, $post = '', $cookie = '', $bysocket = FALSE, $
 
 
 
-function is_email($email) {
-	return strlen($email) > 6 && preg_match("/^[\w\-\.]+@[\w\-\.]+(\.\w+)+$/", $email);
-}
 
+function is_email($str) {
+    return ( ! preg_match("/^([a-z0-9\+_\-]+)(\.[a-z0-9\+_\-]+)*@([a-z0-9\-]+\.)+[a-z]{2,6}$/ix", $str)) ? FALSE : TRUE;
+}
 
 
 /*
@@ -546,9 +546,6 @@ function microtime_float() {
     return $mtime[1] + $mtime[0];
 }
 
-function valid_email($str) {
-    return ( ! preg_match("/^([a-z0-9\+_\-]+)(\.[a-z0-9\+_\-]+)*@([a-z0-9\-]+\.)+[a-z]{2,6}$/ix", $str)) ? FALSE : TRUE;
-}
 
 // 根据不同系统取得CPU相关信息
 switch(PHP_OS) {
@@ -713,30 +710,6 @@ function redirect($url='/',$kCache=0){
     exit;
 }
 
-
-
-
-/**
- * 判断是否为ajax
- *
- * @access public
- * @return boolean
- */
-function isAjax(){
-    return 'XMLHttpRequest' == env('HTTP_X_REQUESTED_WITH','es');
-}  
-
-
-/**
- * 判断是否为flash
- *
- * @access public
- * @return boolean
- */
-public function isFlash()
-{
-    return 'Shockwave Flash' == env('USER_AGENT','es');
-}
 
 
 
