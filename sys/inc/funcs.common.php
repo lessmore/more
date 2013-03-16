@@ -38,6 +38,7 @@ else{
         }
 }
 *  
+*  if (buildin_ip($Love->user_ip)){}
 */
 
 /*

@@ -1,4 +1,12 @@
 <?php
+/*
+| ------------------------------------------
+| 基础核心函数库
+| ------------------------------------------ 
+|
+| 当页面空白时，php -l本文件是最有效的debug
+| 
+*/
 Speakup();
 
 /*
@@ -23,16 +31,13 @@ function Speakup(){
 */
 function Perfume(){
     //调制(默认)
-    //call('reg', array('top','client'));
-    //call('reg', array('mid','router'));
-    call('router');die;
+    call('reg', array('top','client'));
+    call('reg', array('mid','router'));
 
     //前调'中调'尾调
     call('reg', array('top'));
     call('reg', array('mid'));
     call('reg', array('low'));
-
-    //call('var_dump', array($Love->error));
 }
 
 
@@ -41,7 +46,7 @@ function Perfume(){
 * client handler
 * ------------------------------------------
 *
-* IP, Attacks clear
+* IP, Attacks clear, 此方法不通过env()获取环境
 *
 */
 function client() {
@@ -53,10 +58,12 @@ function client() {
     //Terminal//Web//mobile//Ed
     $Love->is_cli = (PHP_SAPI=='cli');
     $Love->is_ajax = ('XMLHttpRequest'==$_SERVER['HTTP_X_REQUESTED_WITH']);
-    $Love->is_flash = (strpos($_SERVER['USER_AGENT'],'Shockwave Flash')!==false);
+    $Love->is_flash = (strpos($_SERVER['HTTP_USER_AGENT'],'Shockwave Flash')!==false);
 
     //Client Fileter ----
-    if (empty($_SERVER['HTTP_USER_AGENT']) || empty($_SERVER['HTTP_ACCEPT_ENCODING'])) {
+    if (empty($_SERVER['HTTP_USER_AGENT'])
+        || empty($_SERVER['HTTP_ACCEPT_ENCODING'])
+        ) {//|| $_COOKIE['_domainvid=']    cookie有问题？
         call('send_header', array(404));
     }
 
@@ -77,27 +84,32 @@ function client() {
     }//Ed
 
     //Spider
-    preg_match('/Baiduspider|baidu\s+Transcoder|bingbot|MSNbot|Yahoo\!\ Slurp|iaskspider|Sogou[a-zA-Z\s]+spider|Googlebot|YodaoBot|OutfoxBot|ia_archiver|msnbot|P\.    Arthur|QihooBot|Gigabot|360Spider/i', $_SERVER ['HTTP_USER_AGENT'], $Love->spider);
+    preg_match('/Baiduspider|baidu\s+Transcoder|bingbot|MSNbot|Yahoo\!\ Slurp|iaskspider|Sogou[a-zA-Z\s]+spider|Googlebot|YodaoBot|OutfoxBot|ia_archiver|msnbot|P\.    Arthur|QihooBot|Gigabot|360Spider/i', $_SERVER['HTTP_USER_AGENT'], $Love->spider);
 
     //Service Unavailable
     //Call('send_header', array(503));
 
-    //Client Fileter End
+    //Client Fileter End -----
 
-    //通过Url打开debug//防止链接被记录,每10分钟的密钥变一次 //如：ladybug=123451749823432432, 17498-05153(5日15点3x分)==12345
-    if (env('ladybug','g') && (substr(env('ladybug','g'),5,5)-substr(date('jHi'),0,5))==12345){
-        cfg('debug_threshold',2);
+    //通过Url打开debug //防止链接被记录,每10分钟的密钥变一次,如：ladybug=323451749823432432, 17498-05153(5日15点3x分)==12345
+    if (isset($_GET['ladybug']) && (substr($_GET['ladybug'],5,5)-substr(date('jHi'),0,5))==12345){
+        cfg('debug_threshold', 2);
         tracy('!! DEBUG OPENED BY URL QUERY');
     }
 
-    if (cfg('debug_threshold')>0){
+    if (cfg('debug_threshold') > 0){
         error_reporting(E_ALL);
-        ini_set('display_errors','On');
         ini_set('html_errors','On');
+        ini_set('display_errors','On');
     }
 
-    //触发设定
-    $Love->sample_s_1_60 = ($Love->time%60)<1;
+    //IE的iframe的cookie安全保存问题
+    if(stripos($_SERVER['HTTP_USER_AGENT'], "MSIE")) {
+        header('P3P: CP=CAO PSA OUR');
+    }
+
+    //触发点设定
+    $Love->sample_s_1_60 = !$Love->time%60;
     $Love->sample_r_1_1000= rand(1,1000)%999;
 }
 
@@ -305,12 +317,23 @@ function call($func_name, array $func_args=array()){
         $info = $e->getMessage()." ".$e->getFile()." on Line ".$e->getLine()."----".$e->getCode()."----".$e->getTrace()."----".$e->getTraceAsString();
     }
 
-    $info .= ' [args] '.var_export($func_args,1);
-    $info .= get_last_error();
+    if (cfg('debug_backtrace')>-1){
+        $file = debug_backtrace();
+        $file = array_shift($file);
+        $info .= ' on '.$file['file'].' line '.$file['line'];
+        $info .= ' [args] '.var_export($func_args,1);
+        $info .= get_last_error();
 
-    //global $Love;
-    //$Love->time()-time();
-    register_shutdown_function('tracy',$info);
+        //global $Love;
+        //$Love->time()-time();
+        register_shutdown_function('tracy',$info);
+    }
+
+    //exit,die是语言结构不是函数，可又特别需要:-0
+    if (in_array($func_name, array('exit','die'))){
+        exit(isset($func_args[0])?$func_args[0]:'');
+    }
+
     return $return;
 }
 
@@ -331,25 +354,19 @@ function Tracy($info){
         $info = var_export($info,true);
     }
 
-    $trace = array_reverse(debug_backtrace());
-    //foreach($trace as $k => $v){
-        //echo '|['.basename($v['file']).'.'.$v['line'].']';
-        //echo ' call '.$v['function'];
-        //echo ', args ';
-        //echo str_replace(PHP_EOL,'',var_export($info,1));
-        //echo "|\n";
-    //}
     $error = get_last_error();
     strpos($info,$error) || $info .= ' '.$error;
-    $info = date("Y-m-d, H:d:s")." ".str_replace(array(PHP_EOL,dirname(SYS).'/','  '),array('','',' '),$info).PHP_EOL;
+    $info = PHP_EOL.date("Y-m-d, H:d:s")." ".str_replace(dirname(SYS).'/','',$info);
+
+    if (cfg('debug_threshold') === 2){
+        echo preg_replace(array("/=>&nbsp;&nbsp;'([^']*)'/","/'([^']*)'/"),array("<span style=\"color:#bc0\">=>&nbsp;&nbsp;</span>'<span style=\"color:#c3b\">\$1</span>'","'<span style='color:#0bd'>\$1</span>'"), stripslashes(nl2br(str_replace(" ","&nbsp;&nbsp;",$info.PHP_EOL.str_pad('|',28,'-')))));//输出特别处理
+    }
+
+    $info = str_replace(array(PHP_EOL,'  '),array('',' '),$info).PHP_EOL;//log日志处理
 
     isset($Love) || $Love->error=array();
     $Love->error[] = $info;
-    
-    if (cfg('debug_threshold') === 2){
-        echo nl2br($info);
-    }
-
+   
     //阀值>0或者定点
     if (cfg('debug_threshold')>0 || $Love->sample_s_1_60){
         $dir = cfg('log_path').date('Ymd').'/';
@@ -406,10 +423,10 @@ function router($request_uri=null,$route_rule=''){
         call('send_header', array(404)); //.php?abc 禁止非htm/html解析  =======  /xxx.html/  当作目录处理  PS:/xx.html/?x=y 这种本来xx.html就当目录处理
     }                                                    
 
-    if ($uri['dirname'] =='/'){
-        $controller = '';
-    }else{
-        $controller = explode('-',$route_rule['dirname']);
+    $uri['dirname'] = trim('/',$uri['dirname']);
+
+    if ($uri['dirname']){
+        $controller = explode('-',$uri['dirname']);
         $action = array_pop($controller);
         $controller = implode('_',$controller);
     }
@@ -419,11 +436,13 @@ function router($request_uri=null,$route_rule=''){
     empty($controller) && $controller='index';
     empty($action)     && $action='index';
     empty($arguments)  && $arguments=array();
+
+    $controller = 'c_'.$controller;
     $Love->controller = $controller;
     $Love->action = $action;
     $Love->args = $arguments;
 
-    call(array('c_'.$controller, $action),$arguments);
+    call(array($controller, $action),$arguments);
 }
 
 
@@ -438,7 +457,7 @@ function router($request_uri=null,$route_rule=''){
 function send_header($code){
     $http_code = array(
         204 => 'No Content',        //无言以对
-        301 => 'Moved Permanently', //本地址永久性转移到另一个地址
+        301 => 'Moved Permanently', //永久性转移到另一个地址
         302 => 'Found',             //暂时转向到另外一个网址。一个不道德的人在他自己的网址A做一个302重定向到你的网址B，出于某种原因， Google搜索结果所显示的仍然是网址A，
         303 => 'See Other',         //但是所用的网页内容却是你的网址B上的内容，这种情况就叫做网址URL劫持。你辛辛苦苦所写的内容就这样被别人偷走了。
         304 => 'Not Modified',
