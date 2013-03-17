@@ -1,8 +1,7 @@
 <?php
-//require_once dir(__FILE__).'../sys/init.php';
+require_once __DIR__.'/../../sys/init.php';
 
-//$action = 'index';
-//$controller = 'index';
+cfg('debug_threshold',1);
+$Love->dev = true;
 
-require_once '../../sys/a.php';
-include 'c/index.php';
+perfume();

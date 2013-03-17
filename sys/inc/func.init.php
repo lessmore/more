@@ -15,7 +15,7 @@ Speakup();
 * ------------------------------------------
 */
 function Speakup(){
-    defined('LADY') || exit('Need Lady To Keep Moving  :-0');
+    defined('LADY') || call('exit',array('Need Lady To Keep Moving  :-0'));
 }
 
 
@@ -57,12 +57,12 @@ function client() {
 
     //Terminal//Web//mobile//Ed
     $Love->is_cli = (PHP_SAPI=='cli');
-    $Love->is_ajax = ('XMLHttpRequest'==$_SERVER['HTTP_X_REQUESTED_WITH']);
-    $Love->is_flash = (strpos($_SERVER['HTTP_USER_AGENT'],'Shockwave Flash')!==false);
+    $Love->is_ajax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) ? ('XMLHttpRequest'==$_SERVER['HTTP_X_REQUESTED_WITH']):null;
+    $Love->is_flash = isset($_SERVER['HTTP_USER_AGENT']) ? (strpos($_SERVER['HTTP_USER_AGENT'],'Shockwave Flash')!==false):null;
 
     //Client Fileter ----
     if (empty($_SERVER['HTTP_USER_AGENT'])
-        || empty($_SERVER['HTTP_ACCEPT_ENCODING'])
+        || empty($_SERVER['HTTP_ACCEPT'])
         ) {//|| $_COOKIE['_domainvid=']    cookie有问题？
         call('send_header', array(404));
     }
@@ -94,7 +94,7 @@ function client() {
     //通过Url打开debug //防止链接被记录,每10分钟的密钥变一次,如：ladybug=323451749823432432, 17498-05153(5日15点3x分)==12345
     if (isset($_GET['ladybug']) && (substr($_GET['ladybug'],5,5)-substr(date('jHi'),0,5))==12345){
         cfg('debug_threshold', 2);
-        tracy('!! DEBUG OPENED BY URL QUERY');
+        call('tracy',array('!! DEBUG OPENED BY URL QUERY'));
     }
 
     if (cfg('debug_threshold') > 0){
@@ -253,7 +253,7 @@ function env($key,$type='gpc',array $options=array('default'=>null,'value'=>null
 */
 function call($func_name, array $func_args=array()){
     try{
-        empty($func_name) && exit("!!Empty function name");
+        empty($func_name) && call("exit",array("!!Empty function name"));
 
         if (is_array($func_name)){
             list($class_name,$method) = $func_name;
@@ -304,37 +304,45 @@ function call($func_name, array $func_args=array()){
             }//Ed
         }
 
+        $info = '';
+        $debug_threshold = -1;
+
+        if (cfg('debug_threshold') > $debug_threshold){
+            $file = debug_backtrace();
+            $file = array_shift($file);
+            $info .= ' on '.$file['file'].' line '.$file['line'];
+            $info .= (is_string($func_name) && !in_array($func_name,array('tracy'))) ? ' [args] '.var_export($func_args,1):'';
+            $info .= get_last_error();
+        }
+
         //参数2:false的意图为仅当函数或方法可真实调用时才返回true，举个例子，私有方法外部调用is_callable将返回false! 默认为false。
         //另外一点，对于非静态方法的声明，$call_name也会返回可调用形式class::method，所以即使你NB的想用静态，也不用刻意去声明静态。
         if (is_callable($func_name,false,$call_name)){
-            $return = call_user_func_array($func_name,$func_args);
-            $info = "[√] [call] $call_name";
-        }else{
-            $return = null;
-            $info = "[×] [call] $call_name";
+            $info = "[√] [call] $call_name".$info;
+            if (cfg('debug_threshold') > $debug_threshold){
+                static $call_time;
+                $info .= isset($call_time) ? (' [prevCall] '.round(microtime(true)-$call_time,7)).'s' : '';
+                $call_time = microtime(true);
+                register_shutdown_function('tracy',$info);
+            }
+
+            return call_user_func_array($func_name,$func_args);
         }
+
+        $info = "[×] [call] $call_name".$info;
     } catch(Exception $e) {
-        $info = $e->getMessage()." ".$e->getFile()." on Line ".$e->getLine()."----".$e->getCode()."----".$e->getTrace()."----".$e->getTraceAsString();
+        $info .= (' '.$e->getMessage()." ".$e->getFile()." on Line ".$e->getLine()."----".$e->getCode()."----".$e->getTrace()."----".$e->getTraceAsString());
     }
 
-    if (cfg('debug_backtrace')>-1){
-        $file = debug_backtrace();
-        $file = array_shift($file);
-        $info .= ' on '.$file['file'].' line '.$file['line'];
-        $info .= ' [args] '.var_export($func_args,1);
-        $info .= get_last_error();
-
-        //global $Love;
-        //$Love->time()-time();
+    if (cfg('debug_threshold') > $debug_threshold){
         register_shutdown_function('tracy',$info);
     }
 
     //exit,die是语言结构不是函数，可又特别需要:-0
-    if (in_array($func_name, array('exit','die'))){
-        exit(isset($func_args[0])?$func_args[0]:'');
+    if (in_array($call_name, array('exit','die'))){
+        global $Love;
+        isset($Love->dev) || exit(isset($func_args[0])&&is_string($func_args[0]) ? $func_args[0] : '');
     }
-
-    return $return;
 }
 
 
@@ -355,11 +363,11 @@ function Tracy($info){
     }
 
     $error = get_last_error();
-    strpos($info,$error) || $info .= ' '.$error;
-    $info = PHP_EOL.date("Y-m-d, H:d:s")." ".str_replace(dirname(SYS).'/','',$info);
+    $info .= strpos($info,$error) ? ' '.$error : '';
+    $info = date("Y-m-d, H:d:s")." ".str_replace(dirname(SYS).'/','',$info);
 
     if (cfg('debug_threshold') === 2){
-        echo preg_replace(array("/=>&nbsp;&nbsp;'([^']*)'/","/'([^']*)'/"),array("<span style=\"color:#bc0\">=>&nbsp;&nbsp;</span>'<span style=\"color:#c3b\">\$1</span>'","'<span style='color:#0bd'>\$1</span>'"), stripslashes(nl2br(str_replace(" ","&nbsp;&nbsp;",$info.PHP_EOL.str_pad('|',28,'-')))));//输出特别处理
+        echo preg_replace(array("/=>&nbsp;&nbsp;'([^']*)'/","/'([^']*)'/"),array("<span style=\"color:#bc0\">=>&nbsp;&nbsp;</span>'<span style=\"color:#c3b\">\$1</span>'","'<span style='color:#0bd'>\$1</span>'"), stripslashes(nl2br(str_replace(" ","&nbsp;&nbsp;",$info.PHP_EOL.str_pad('',168,'-')))));//输出特别处理
     }
 
     $info = str_replace(array(PHP_EOL,'  '),array('',' '),$info).PHP_EOL;//log日志处理
@@ -433,16 +441,17 @@ function router($request_uri=null,$route_rule=''){
 
     $arguments = $uri['filename']=='' ? '' : explode('-', $uri['filename']);
 
-    empty($controller) && $controller='index';
-    empty($action)     && $action='index';
-    empty($arguments)  && $arguments=array();
+    //可在入口文件自定默认controller,action
+    $controller = (empty($controller) ? (empty($Love->controller) ? 'index' : $Love->controller) : 'index');
+    $action = (empty($action) ? (empty($Love->action) ? 'index' : $Love->action) : 'index');
+    $arguments = (empty($arguments) ? (empty($Love->arguments) ? array() : $Love->arguments) : array());
 
     $controller = 'c_'.$controller;
     $Love->controller = $controller;
     $Love->action = $action;
-    $Love->args = $arguments;
+    $Love->arguments = $arguments;
 
-    call(array($controller, $action),$arguments);
+    call(array($Love->controller,$Love->action),$Love->arguments);
 }
 
 
@@ -477,9 +486,10 @@ function send_header($code){
         header('HTTP/1.1 ' . $code . ' '.$http_code[$code], true, $code);
     }
 
+    $params = array();
     if (in_array($code,array(204,400,403,404,500,502,503,504))){
-        tracy($_SERVER); //把问题客户端特征保存下来，主要的MD5，避免多次保存
+        $params = array($_SERVER); //把问题客户端特征保存下来，主要的MD5，避免多次保存
     }
 
-    call('exit');
+    call('exit',$params);
 }
