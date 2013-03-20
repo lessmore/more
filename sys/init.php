@@ -27,6 +27,9 @@ $Love = (object) NULL; //定义一个全局对象变量,加(object)只是为了�
 error_reporting(0);
 date_default_timezone_set("Asia/Shanghai");
 
+//error_reporting(E_ALL);
+//ini_set('display_errors','On');
+
 require SYS.'inc/func.init.php';
 
 
@@ -38,7 +41,7 @@ require_once path.'/../../sys/init.php';
 
 //open dev mode
 cfg('debug_threshold',1);
-$Love->dev = true;
+cfg('dev',true);
 
 call('reg', array('top',array('debug',1)));
 call('reg', array('top',array('pro_start')));

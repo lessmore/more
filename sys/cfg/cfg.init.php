@@ -33,10 +33,13 @@ return array(
     # 2 All Output && log
     'debug_threshold'   => 0,
 
+    #load config, skip security check
+    'dev'               => false,
+
 
     # domain settings
-    'index_domain'      => 'bulaidian.com',
-    'img_domain'        => 'img.bulaidian.com',# array( img0,img1, random
+    'idx_domain'        => 'bulaidian.com',
+    'pub_domain'        => 'http://img.slave.com/',# array( img0,img1, random
     'cookie_prefix'     => 'bulaidian_',
 
     # service config

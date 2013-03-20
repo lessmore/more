@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__.'/../../sys/init.php';
 
-cfg('debug_threshold',1);
-$Love->dev = true;
+cfg('debug_threshold',2);
+cfg('dev',true);
 
 perfume();
