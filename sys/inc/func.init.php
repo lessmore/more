@@ -4,7 +4,9 @@
 | 基础核心函数库
 | ------------------------------------------ 
 |
-| 当页面空白时，php -l本文件是最有效的debug
+| 当页面空白时
+| 一，php -l 本文件
+| 二，tail -f /apache2/error_log
 | 
 */
 Speakup();
@@ -46,19 +48,14 @@ function Perfume(){
 * client handler
 * ------------------------------------------
 *
-* IP, Attacks clear, 此方法不通过env()获取环境
+* IP, Attacks clear
 *
 */
 function client() {
-    global $Love;
 
-    //Time of start request
-    $Love->time = $_SERVER['REQUEST_TIME'];
-
+    //安全等，此段不使用env环境变量
     //Terminal//Web//mobile//Ed
-    $Love->is_cli = (PHP_SAPI=='cli');
-    $Love->is_ajax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) ? ('XMLHttpRequest'==$_SERVER['HTTP_X_REQUESTED_WITH']):null;
-    $Love->is_flash = isset($_SERVER['HTTP_USER_AGENT']) ? (strpos($_SERVER['HTTP_USER_AGENT'],'Shockwave Flash')!==false):null;
+    $is_cli = (PHP_SAPI=='cli');
 
     //Client Fileter ----
     if (empty($_SERVER['HTTP_USER_AGENT'])
@@ -69,48 +66,65 @@ function client() {
 
     //IP Addr
     if (!empty($_SERVER['HTTP_X_REAL_IP']) && intval($_SERVER['HTTP_X_REAL_IP'])>0) {
-        $Love->user_ip = $_SERVER['HTTP_X_REAL_IP'];
+        $user_ip = $_SERVER['HTTP_X_REAL_IP'];
     } else if (!empty($_SERVER['HTTP_X_FORWARDED_FOR']) && ($ips=explode(',',$_SERVER['HTTP_X_FORWARDED_FOR'])) && intval($ips[0])>0) { 
-        $Love->user_ip = $ips[0];
+        $user_ip = $ips[0];
     } else if (!empty($_SERVER['HTTP_CLIENT_IP']) && intval($_SERVER['HTTP_CLIENT_IP'])>0) {
-        $Love->user_ip = $_SERVER['HTTP_CLIENT_IP'];
+        $user_ip = $_SERVER['HTTP_CLIENT_IP'];
     } else {
-        $Love->user_ip = $_SERVER['REMOTE_ADDR'];
+        $user_ip = $_SERVER['REMOTE_ADDR'];
     }
-
-    //内网或伪造成内网IP的用户, 127实际只有0,16-31
-    if (preg_match('/^(192\.168|10|127\.(0|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\./', $Love->user_ip)) {
+    if (preg_match('/^(192\.168|10|127\.(0|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\./', $user_ip)) {//内网或伪造成内网IP的用户, 127实际只有0,16-31
         call('send_header', array(404));
     }//Ed
 
     //Spider
-    preg_match('/Baiduspider|baidu\s+Transcoder|bingbot|MSNbot|Yahoo\!\ Slurp|iaskspider|Sogou[a-zA-Z\s]+spider|Googlebot|YodaoBot|OutfoxBot|ia_archiver|msnbot|P\.    Arthur|QihooBot|Gigabot|360Spider/i', $_SERVER['HTTP_USER_AGENT'], $Love->spider);
+    preg_match('/Baiduspider|baidu\s+Transcoder|bingbot|MSNbot|Yahoo\!\ Slurp|iaskspider|Sogou[a-zA-Z\s]+spider|Googlebot|YodaoBot|OutfoxBot|ia_archiver|msnbot|P\.    Arthur|QihooBot|Gigabot|360Spider/i', $_SERVER['HTTP_USER_AGENT'], $spider);
 
     //Service Unavailable
     //Call('send_header', array(503));
+    //Ed
 
-    //Client Fileter End -----
 
     //通过Url打开debug //防止链接被记录,每10分钟的密钥变一次,如：ladybug=323451749823432432, 17498-05153(5日15点3x分)==12345
     if (isset($_GET['ladybug']) && (substr($_GET['ladybug'],5,5)-substr(date('jHi'),0,5))==12345){
         cfg('debug_threshold', 2);
-        call('tracy',array('!! DEBUG OPENED BY URL QUERY'));
+        call('tracy',array('!! DEBUG OPENED BY URL QUERY STRING'));
     }
-
     if (cfg('debug_threshold') > 0){
         error_reporting(E_ALL);
         ini_set('html_errors','On');
         ini_set('display_errors','On');
     }
 
-    //IE的iframe的cookie安全保存问题
-    if(stripos($_SERVER['HTTP_USER_AGENT'], "MSIE")) {
-        header('P3P: CP=CAO PSA OUR');
-    }
+    /*
+    | $Love defalut initialize -------------------- Here */
+    global $Love;
+
+    $Love->cwd = getcwd();
+    $Love->user_ip = $user_ip;
+    $Love->spider= $spider;
+    $Love->is_cli = $is_cli;
+    $Love->is_ie = stripos($_SERVER['HTTP_USER_AGENT'], "MSIE");
+    $Love->is_ajax = ('XMLHttpRequest'==env('HTTP_X_REQUESTED_WITH','S'));
+    $Love->is_flash = (strpos(env('HTTP_USER_AGENT','S'),'Shockwave Flash')!==false);
+
+    //Time of start request
+    $Love->time = env('REQUEST_TIME','S',array('default'=>time()));
+
 
     //触发点设定
     $Love->sample_s_1_60 = !$Love->time%60;
-    $Love->sample_r_1_1000= rand(1,1000)%999;
+    $Love->sample_r_1_1000= rand(1,1000)%999;//Ed
+
+    //html display
+    $Love->js = $Love->css = array('top'=>array(), 'mid'=>array(), 'low'=>array(), 'G'=>array());
+    //Ed
+
+    //IE的iframe的cookie安全保存问题
+    if($Love->is_ie) {
+        header('P3P: CP=CAO PSA OUR');
+    }
 }
 
 
@@ -165,10 +179,10 @@ function cfg($key,$value=null){
     $cfg_name = strtolower($key);
 
     if (!isset($Love->cfg[$cfg_name])){
-        $files = array('init',$_SERVER['SERVER_NAME']);//可对单个域名下另配置或覆盖默认//$files = glob(CFG_PATH.'cfg.*.php');
+        $files = array('init',env('SERVER_NAME','S'));//可对单个域名下另配置或覆盖默认//$files = glob(CFG_PATH.'cfg.*.php');
         if (!empty($files)){
             foreach($files as $file){
-                $file = SYS.'cfg/cfg.'.$file.'.php';
+                $file = SYS.'cfg/cfg.'.strtolower($file).'.php';
                 is_file($file) && $Love->cfg=array_merge((array)$Love->cfg, (array) include_once $file);
             }
         }
@@ -246,7 +260,7 @@ function env($key,$type='gpc',array $options=array('default'=>null,'value'=>null
 * ------------------------------------------
 * 
 *  不对命名空间支持
-*  array('self','method'),'self::method'方式只在类的内部用call_user_func_array才能有效调用，故这里不支持
+*  array(self,'method'),'self::method' 不支持
 *
 * @param string $func_name 调用代码 4种组合 array($obj,'method') | array('class','method') | 'class::method',array($this,'self::dior') | function
 * @param array [args] 传递给方法的参数列表
@@ -317,7 +331,7 @@ function call($func_name, array $func_args=array()){
 
         //参数2:false的意图为仅当函数或方法可真实调用时才返回true，举个例子，私有方法外部调用is_callable将返回false! 默认为false。
         //另外一点，对于非静态方法的声明，$call_name也会返回可调用形式class::method，所以即使你NB的想用静态，也不用刻意去声明静态。
-        if (is_callable($func_name,false,$call_name)){
+        if (is_callable($func_name,false, $call_name)){
             $info = "[√] [call] $call_name".$info;
             if (cfg('debug_threshold') > $debug_threshold){
                 static $call_time;
@@ -327,21 +341,20 @@ function call($func_name, array $func_args=array()){
             }
 
             return call_user_func_array($func_name,$func_args);
-        }
+        } else {
+            $info = "[×] [call] $call_name".$info;
+            register_shutdown_function('tracy',$info);
 
-        $info = "[×] [call] $call_name".$info;
+            if (in_array($call_name, array('exit','die'))){ //exit,die是语言结构不是函数，可又特别需要:-0
+                global $Love;
+                cfg('dev') || exit(isset($func_args[0])&&is_string($func_args[0]) ? $func_args[0] : '');
+            }
+            //虽然页面没找到，但我们可以帮他找到亲人
+            //call('page',array(404));
+        }
     } catch(Exception $e) {
         $info .= (' '.$e->getMessage()." ".$e->getFile()." on Line ".$e->getLine()."----".$e->getCode()."----".$e->getTrace()."----".$e->getTraceAsString());
-    }
-
-    if (cfg('debug_threshold') > $debug_threshold){
-        register_shutdown_function('tracy',$info);
-    }
-
-    //exit,die是语言结构不是函数，可又特别需要:-0
-    if (in_array($call_name, array('exit','die'))){
-        global $Love;
-        isset($Love->dev) || exit(isset($func_args[0])&&is_string($func_args[0]) ? $func_args[0] : '');
+        register_shutdown_function('tracy', $info);
     }
 }
 
@@ -367,7 +380,7 @@ function Tracy($info){
     $info = date("Y-m-d, H:d:s")." ".str_replace(dirname(SYS).'/','',$info);
 
     if (cfg('debug_threshold') === 2){
-        echo preg_replace(array("/=>&nbsp;&nbsp;'([^']*)'/","/'([^']*)'/"),array("<span style=\"color:#bc0\">=>&nbsp;&nbsp;</span>'<span style=\"color:#c3b\">\$1</span>'","'<span style='color:#0bd'>\$1</span>'"), stripslashes(nl2br(str_replace(" ","&nbsp;&nbsp;",$info.PHP_EOL.str_pad('',168,'-')))));//输出特别处理
+        echo preg_replace(array("/=>&nbsp;&nbsp;'([^']*)'/","/'([^']*)'/"),array("<span style=\"color:#bc0\">=>&nbsp;&nbsp;</span>'<span style=\"color:#c3b\">\$1</span>'","'<span style='color:#0bd'>\$1</span>'"), stripslashes(nl2br(str_replace(" ","&nbsp;&nbsp;",$info.PHP_EOL.str_pad('',168,'-').PHP_EOL))));//输出特别处理
     }
 
     $info = str_replace(array(PHP_EOL,'  '),array('',' '),$info).PHP_EOL;//log日志处理
@@ -419,7 +432,7 @@ function get_last_error(){
 function router($request_uri=null,$route_rule=''){
     global $Love;
 
-    empty($route_rule) && $route_rule="/dir-file--act/arg-arg-arg.html?abc=cbd"; //模型定制暂缓
+    empty($route_rule) && $route_rule="/dir-file--act/arg-arg-arg.html?abc=cbd"; //模型定制@todo
     isset($Love->route_rule) || $Love->route_rule=$route_rule;
 
     empty($request_uri) && $request_uri=$_SERVER['REQUEST_URI']; 
@@ -428,23 +441,22 @@ function router($request_uri=null,$route_rule=''){
     $uri = pathinfo(trim($request_uri));
 
     if (substr($request_uri,-1,1)!=='/' && isset($uri['extension']) && strpos($uri['extension'],'htm')!==0){
-        call('send_header', array(404)); //.php?abc 禁止非htm/html解析  =======  /xxx.html/  当作目录处理  PS:/xx.html/?x=y 这种本来xx.html就当目录处理
+        call('send_header', array(404)); //php?abc 禁止非htm/html解析  =======  /xxx.html/  当作目录处理  PS:/xx.html/?x=y 这种本来xx.html就当目录处理
     }                                                    
 
-    $uri['dirname'] = trim('/',$uri['dirname']);
+    $uri['dirname'] = trim($uri['dirname'],'/');
 
     if ($uri['dirname']){
         $controller = explode('-',$uri['dirname']);
         $action = array_pop($controller);
         $controller = implode('_',$controller);
     }
-
     $arguments = $uri['filename']=='' ? '' : explode('-', $uri['filename']);
 
-    //可在入口文件自定默认controller,action
-    $controller = (empty($controller) ? (empty($Love->controller) ? 'index' : $Love->controller) : 'index');
-    $action = (empty($action) ? (empty($Love->action) ? 'index' : $Love->action) : 'index');
-    $arguments = (empty($arguments) ? (empty($Love->arguments) ? array() : $Love->arguments) : array());
+    //可在public入口文件自定默认controller,action
+    $controller = (empty($controller) ? (empty($Love->controller) ? 'index' : $Love->controller) : $controller);
+    $action = (empty($action) ? (empty($Love->action) ? 'index' : $Love->action) : $action);
+    $arguments = (empty($arguments) ? (empty($Love->arguments) ? array() : $Love->arguments) : $arguments);
 
     $controller = 'c_'.$controller;
     $Love->controller = $controller;
@@ -486,10 +498,58 @@ function send_header($code){
         header('HTTP/1.1 ' . $code . ' '.$http_code[$code], true, $code);
     }
 
-    $params = array();
-    if (in_array($code,array(204,400,403,404,500,502,503,504))){
-        $params = array($_SERVER); //把问题客户端特征保存下来，主要的MD5，避免多次保存
-    }
+    $params = in_array($code,array(204,400,403,404,500,502,503,504)) ? array($_SERVER) : array(); //把问题客户端特征保存下来，主要的MD5，避免多次保存
 
     call('exit',$params);
+}
+
+
+
+/** 
+* ------------------------------------------
+* view
+* ------------------------------------------
+*
+* $Love->js = $Love->css = array( 'top' => array(), 'mid' => array(),  'low' => array());
+*
+*/
+function display($file,$data=array(),$return=false){
+    global $Love;
+    
+    is_array($data) || call('exit',array($file));
+
+    //init
+    $pub_domain = cfg('pub_domain');
+    $data['IMG'] = $pub_domain.'img/';
+    $data['JS'] = $data['CSS'] = array('top'=>'','mid'=>'','low'=>''); 
+
+    foreach($Love->js as $k => $v){
+        if ($k == 'G'){
+            if ($v){
+                $data['JS']['top'] .= '<script type="text/javascript">'."\nvar G=eval(".json_encode($v).");\n</script>\n";
+            }
+        } else if ($v && is_array($v)){
+            foreach($v as $js){
+                cfg('dev') && $js.='?a='.uniqid();
+                $data['JS'][$k] .= '<script type="text/javascript" src="'.$pub_domain.'js/'.$js."\"></script>\n";
+            }
+        }
+    }
+    foreach($Love->css as $k => $v){
+        if ($v && is_array($v)){
+            foreach($v as $css){
+                cfg('dev') && $css.='?a='.uniqid();
+                $data['CSS'][$k] .= '<link rel="stylesheet" type="text/css" href="'.$pub_domain.'css/'.$css."\" />\n";
+            }
+        }
+    }
+
+    extract($data);
+    $file = $Love->cwd.'/v/'.$file;
+
+    if ($return){
+        return include $file;
+    }else{
+        include $file;
+    }
 }

@@ -37,9 +37,61 @@ else{
                 exit(0);
         }
 }
+
+
+
+highlight_file
+
+
+ gzcompress() 和 gzuncompress()  gzip
+this is a benchmark test of gzencode (.txt file)
+----------------------------------------------
+original file size = 3.29 MB (3,459,978 bytes)
+compress lvl 1 = 1.09 MB (1,144,006 bytes)
+compress lvl 2 = 1.06 MB (1,119,518 bytes)
+compress lvl 3 = 1.03 MB (1,085,567 bytes)
+compress lvl 4 = 953 KB (976,538 bytes)
+compress lvl 5 = 909 KB (931,486 bytes)
+compress lvl 6 = 910 KB (932,516 bytes)
+compress lvl 7 = 910 KB (932,608 bytes)
+compress lvl 8 = 910 KB (932,646 bytes)
+compress lvl 9 = 910 KB (932,652 bytes)
 *  
 *  if (buildin_ip($Love->user_ip)){}
 */
+
+
+
+    //curl 抓取淘宝
+    public function curl_html($url = null, $post = null){
+        $RETRY = 2;
+        $STRLEN = 100;
+
+        for($i=1; $i<=$RETRY; $i++){
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10); //10秒超时
+            curl_setopt($ch, CURLOPT_URL,  $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); 
+            curl_setopt($ch, CURLOPT_ENCODING, "gzip");
+            if ($post) {
+                $str = ''; 
+                foreach ($post as $k=>$v) {
+                    $str .= $k.'='.urlencode($v).'&';
+                }   
+                $str = rtrim($str, '&');
+                curl_setopt($ch, CURLOPT_POST,count($post)) ; 
+                curl_setopt($ch, CURLOPT_POSTFIELDS,$str) ;
+            }   
+            $page =  curl_exec($ch);
+            curl_close($ch);
+                
+            if(strlen($page)>$STRLEN){
+                return $page;
+            }   
+        }//END for
+
+        return false;
+    }//END func curl_html
 
 /*
 * ----------------------------------------
