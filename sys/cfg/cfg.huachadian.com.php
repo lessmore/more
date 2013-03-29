@@ -14,7 +14,7 @@ return array(
     'cookie_prefix'     => DOMAIN.'_',
 
     # service config
-    'web'        => array(
+    'web'               => array(
     ),
     'memcache'        => array(
     ),

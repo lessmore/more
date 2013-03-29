@@ -43,10 +43,10 @@ require_once path.'/../../sys/init.php';
 cfg('debug_threshold',1);
 cfg('dev',true);
 
-call('reg', array('top',array('debug',1)));
-call('reg', array('top',array('pro_start')));
-call('reg', array('top',array('showIncTree')));
-call('reg', array('low',array('pro_end')));
+//call('reg', array('top',array('debug',1)));
+//call('reg', array('top',array('pro_start')));
+//call('reg', array('top',array('showIncTree')));
+//call('reg', array('low',array('pro_end')));
 
 Perfume();
 */
