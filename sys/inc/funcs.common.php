@@ -38,7 +38,7 @@ else{
         }
 }
 
-
+php_strip_whitespace |   php -w 
 
 highlight_file
 
@@ -56,11 +56,37 @@ compress lvl 6 = 910 KB (932,516 bytes)
 compress lvl 7 = 910 KB (932,608 bytes)
 compress lvl 8 = 910 KB (932,646 bytes)
 compress lvl 9 = 910 KB (932,652 bytes)
-*  
-*  if (buildin_ip($Love->user_ip)){}
+
+if (buildin_ip($Love->user_ip)){}
+
+if(empty($_GET['u'])){
+            exit;
+}
+$url = base64_decode(base64_decode($_REQUEST['u']));
+die($url);
+
+$proxy = array(
+);
+
+$k = array_rand($proxy);
+$RAND_HTTP_PROXY = $proxy[$k]; 
+$HTTP_USER_AGENT = "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.6) Gecko/20100627 Firefox/3.6.".rand(1,9);
+
+$ch = curl_init(); 
+curl_setopt( $ch, CURLOPT_TIMEOUT, 20 );
+curl_setopt( $ch, CURLOPT_URL, $url );
+curl_setopt( $ch, CURLOPT_RETURNTRANSFER, 1 );
+curl_setopt( $ch, CURLOPT_USERAGENT, $HTTP_USER_AGENT );
+curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1 );
+//curl_setopt( $ch, CURLOPT_PROXYTYPE,CURLPROXY_HTTP);
+//curl_setopt( $ch, CURLOPT_PROXY, $RAND_HTTP_PROXY);
+curl_setopt ($ch, CURLOPT_HEADER, 1);
+$ip = rand(11,230).'.'.rand(11,230).'.'.rand(11,230).'.'.rand(11,230);
+curl_setopt ($ch, CURLOPT_HTTPHEADER, array('CLIENT-IP:'.$ip, 'X-FORWARDED-FOR:'.$ip));
+$html = curl_exec($ch);
+curl_close ( $ch );
+echo $html;
 */
-
-
 
     //curl 抓取淘宝
     public function curl_html($url = null, $post = null){

@@ -35,6 +35,7 @@ function Perfume(){
     //调制(默认)
     call('reg', array('top','client'));
     call('reg', array('mid','router'));
+    call('reg', array('low','html'));
 
     //前调'中调'尾调
     call('reg', array('top'));
@@ -91,11 +92,6 @@ function client() {
         cfg('debug_threshold', 2);
         call('tracy',array('!! DEBUG OPENED BY URL QUERY STRING'));
     }
-    if (cfg('debug_threshold') > 0){
-        error_reporting(E_ALL);
-        ini_set('html_errors','On');
-        ini_set('display_errors','On');
-    }
 
     /*
     | $Love defalut initialize -------------------- Here */
@@ -113,12 +109,12 @@ function client() {
     $Love->time = env('REQUEST_TIME','S',array('default'=>time()));
 
 
-    //触发点设定
+    //触发点设定(抽样
     $Love->sample_s_1_60 = !$Love->time%60;
-    $Love->sample_r_1_1000= rand(1,1000)%999;//Ed
+    $Love->sample_r_1_1000 = rand(1,1000)%999;//Ed
 
     //html display
-    $Love->js = $Love->css = array('top'=>array(), 'mid'=>array(), 'low'=>array(), 'G'=>array());
+    $Love->js = $Love->css = $Love->default_js = $Love->default_css = array('top'=>array(), 'mid'=>array(), 'low'=>array(), 'G'=>array());
     //Ed
 
     //IE的iframe的cookie安全保存问题
@@ -156,6 +152,7 @@ function reg($hook,$callback=null,array $arguments=array()){
     }
 
     if (!empty($Love->reg[$hook])){
+        $Love->reg[$hook] = array_reverse($Love->reg[$hook]);
         foreach($Love->reg[$hook] as $k => $v){
             call($v['callback'],$v['arguments']);
         }
@@ -346,7 +343,6 @@ function call($func_name, array $func_args=array()){
             register_shutdown_function('tracy',$info);
 
             if (in_array($call_name, array('exit','die'))){ //exit,die是语言结构不是函数，可又特别需要:-0
-                global $Love;
                 cfg('dev') || exit(isset($func_args[0])&&is_string($func_args[0]) ? $func_args[0] : '');
             }
             //虽然页面没找到，但我们可以帮他找到亲人
@@ -379,8 +375,8 @@ function Tracy($info){
     $info .= strpos($info,$error) ? ' '.$error : '';
     $info = date("Y-m-d, H:d:s")." ".str_replace(dirname(SYS).'/','',$info);
 
-    if (cfg('debug_threshold') === 2){
-        echo preg_replace(array("/=>&nbsp;&nbsp;'([^']*)'/","/'([^']*)'/"),array("<span style=\"color:#bc0\">=>&nbsp;&nbsp;</span>'<span style=\"color:#c3b\">\$1</span>'","'<span style='color:#0bd'>\$1</span>'"), stripslashes(nl2br(str_replace(" ","&nbsp;&nbsp;",$info.PHP_EOL.str_pad('',168,'-').PHP_EOL))));//输出特别处理
+    if (cfg('debug_threshold')===2 and !$Love->is_ajax){
+        echo preg_replace(array("/=>&nbsp;&nbsp;'([^']*)'/","/'([^']*)'/"),array("<span style=\"color:#2b\">=>&nbsp;&nbsp;</span>'<span style=\"color:#c22\">\$1</span>'","'<span style='color:#09b'>\$1</span>'"), stripslashes(nl2br(str_replace(" ","&nbsp;&nbsp;",$info.PHP_EOL.str_pad('',168,'-').PHP_EOL))));//输出特别处理
     }
 
     $info = str_replace(array(PHP_EOL,'  '),array('',' '),$info).PHP_EOL;//log日志处理
@@ -388,15 +384,18 @@ function Tracy($info){
     isset($Love) || $Love->error=array();
     $Love->error[] = $info;
    
-    //阀值>0或者定点
-    if (cfg('debug_threshold')>0 || $Love->sample_s_1_60){
-        $dir = cfg('log_path').date('Ymd').'/';
-        is_dir($dir) || mkdir($dir,0777,true);
-        file_put_contents($dir.cfg('log_file_tracy'),$info,FILE_APPEND);
-    }
+    $dir = cfg('log_path').date('Ymd').'/';
+    is_dir($dir) || mkdir($dir,0777,true);
+    file_put_contents($dir.cfg('log_file_tracy'),$info,FILE_APPEND);
 }
 
 
+/*
+* ------------------------------------------
+*  get_last_error
+* ------------------------------------------
+* capture 最近一次错误
+*/
 function get_last_error(){
     if ($error = error_get_last()){
         $error_type = array (
@@ -495,14 +494,13 @@ function send_header($code){
     );
 
     if (isset($http_code[$code])){
-        header('HTTP/1.1 ' . $code . ' '.$http_code[$code], true, $code);
+        header('HTTP/1.1 '.$code.' '.$http_code[$code], true, $code);
     }
 
-    $params = in_array($code,array(204,400,403,404,500,502,503,504)) ? array($_SERVER) : array(); //把问题客户端特征保存下来，主要的MD5，避免多次保存
+    $params = in_array($code,array(204,400,403,404,500,502,503,504)) ? array($code.' '.$http_code[$code], $_SERVER) : array($code); //把问题客户端特征保存下来，主要的MD5，避免多次保存
 
     call('exit',$params);
 }
-
 
 
 /** 
@@ -513,43 +511,114 @@ function send_header($code){
 * $Love->js = $Love->css = array( 'top' => array(), 'mid' => array(),  'low' => array());
 *
 */
-function display($file,$data=array(),$return=false){
+function js($js,$pos='low'){
     global $Love;
-    
-    is_array($data) || call('exit',array($file));
 
-    //init
+    in_array($pos,array('top','mid','low','G')) || call('exit',array('UnFound pos',$pos));
+    if ($pos == 'G'){
+        $Love->js[$pos] = array_merge($Love->js[$pos], (array)$js);
+    }else{
+        is_array($js) || $js=array($js);
+        foreach($js as $v){
+            $Love->js[$pos][]=$v;
+        }
+    }
+}
+function css($css,$pos='top'){
+    global $Love;
+
+    in_array($pos,array('top','mid','low','G')) || call('exit',array('UnFound Pos',$pos));
+    is_array($css) || $css=array($css);
+    foreach($css as $v) $Love->css[$pos][]=$v;
+}
+function html($file='',$data=array(),$return=false){
+    global $Love;
     $pub_domain = cfg('pub_domain');
     $data['IMG'] = $pub_domain.'img/';
-    $data['JS'] = $data['CSS'] = array('top'=>'','mid'=>'','low'=>''); 
 
-    foreach($Love->js as $k => $v){
-        if ($k == 'G'){
-            if ($v){
-                $data['JS']['top'] .= '<script type="text/javascript">'."\nvar G=eval(".json_encode($v).");\n</script>\n";
-            }
-        } else if ($v && is_array($v)){
-            foreach($v as $js){
-                cfg('dev') && $js.='?a='.uniqid();
-                $data['JS'][$k] .= '<script type="text/javascript" src="'.$pub_domain.'js/'.$js."\"></script>\n";
-            }
+    if ($file){
+        is_file($file=$Love->cwd.'/v/'.$file) || call('exit',array('UnFound File '.$file));
+
+        if ($return){
+            //$data['JS'] = $data['CSS'] = array('top'=>'','mid'=>'','low'=>'','G'=>''); 
+            extract($data);
+            return include $file;
         }
-    }
-    foreach($Love->css as $k => $v){
-        if ($v && is_array($v)){
-            foreach($v as $css){
-                cfg('dev') && $css.='?a='.uniqid();
-                $data['CSS'][$k] .= '<link rel="stylesheet" type="text/css" href="'.$pub_domain.'css/'.$css."\" />\n";
-            }
-        }
-    }
 
-    extract($data);
-    $file = $Love->cwd.'/v/'.$file;
-
-    if ($return){
-        return include $file;
+        isset($Love->html) || $Love->html=array();
+        $Love->html[] = array('file' => $file,'data'=>$data);
     }else{
-        include $file;
+        if ($Love->is_ajax){
+            return ;
+        }
+
+        $data['JS'] = $data['CSS'] = array('top'=>'','mid'=>'','low'=>'','G'=>''); 
+
+        if (array_filter($Love->js,'count')){
+            krsort($Love->js);
+            foreach($Love->js as $k => $v){
+                if ($k == 'G'){
+                    if ($v){
+                        $data['JS']['top'] .= '<script type="text/javascript">'."\nvar G=".json_encode($v).";\n</script>\n";
+                    }
+                } else if ($v && is_array($v)){
+                    foreach($v as $js){
+                        cfg('dev') && $js.='?a='.uniqid();
+                        $data['JS'][$k] .= '<script type="text/javascript" src="'.$pub_domain.'js/'.$js."\"></script>\n";
+                    }
+                }
+            }
+            $Love->js = $Love->default_js;
+        }
+
+        if (array_filter($Love->css,'count')){
+            krsort($Love->css);
+            foreach($Love->css as $k => $v){
+                if ($k == 'G'){
+                    if ($v){
+                        foreach($v as $css){
+                            $data['CSS']['top'] .= "<style type=\"text/css\">\n".$css."\n</style>\n";
+                        }
+                    }
+                } else if ($v && is_array($v)){
+                    foreach($v as $css){
+                        cfg('dev') && $css.='?a='.uniqid();
+                        $data['CSS'][$k] .= '<link rel="stylesheet" type="text/css" href="'.$pub_domain.'css/'.$css."\" />\n";
+                    }
+
+                }
+            }
+            $Love->js = $Love->default_css;
+        }
+        extract($data);
+
+        if (isset($Love->html)){
+            foreach($Love->html as $k => $v){
+                extract($v['data']);
+                include $v['file'];
+            }
+        }
     }
+}
+
+
+/** 
+* ------------------------------------------
+* __autoload
+* ------------------------------------------
+*
+* function autoload($className){ include_once str_replace('_', DIRECTORY_SEPARATOR, $className).'.php';
+* } spl_autoload_register('autoload', false); //优先按自己注册的autoload来载入
+*
+*/
+function __autoload($class_name) {
+    if (strpos($class_name,'_')!==false){
+        $class_file = getcwd().'/'.str_replace('_','/',$class_name).'.php';//MVC
+    }else{
+        $class_file = cfg('class_path').'class.'.strtolower($class_name).'.php';//SYS
+    }
+
+    is_file($class_file) || call('exit',array('UnAutoLoad File '.$class_file));
+
+    require_once $class_file;
 }

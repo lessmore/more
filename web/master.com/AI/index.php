@@ -9,7 +9,8 @@ if (php_sapi_name()!='cli' or !defined('STDIN')){
     return;
 }
 
-(file_exists('/proc/'.$pid))
+if(file_exists('/proc/'.$pid))
+
 //可做监控页面
 exec("ps -C $file -o pid=", $pids);
 if (count($pids) > 1) {
@@ -18,24 +19,6 @@ if (count($pids) > 1) {
 
 $result = exec("ps aux | grep name.php| wc -l");
 
-$pidifo=getpidinfo(12345); 
-
-print_r($pidifo); 
-
-Array 
-( 
-    [USER] => user 
-    [PID] => 12345 
-    [%CPU] => 0.0 
-    [%MEM] => 0.0 
-    [VSZ] => 1720 
-    [RSS] => 8 
-    [TT] => ?? 
-    [STAT] => Is 
-    [STARTED] => 6:00PM 
-    [TIME] => 0:00.01 
-    [COMMAND] => php someproces.php > logfile 
-) 
 
 function getpidinfo($pid, $ps_opt="aux"){ 
 
@@ -61,6 +44,25 @@ function getpidinfo($pid, $ps_opt="aux"){
    } 
    return $pidinfo; 
 } 
+
+$pidifo=getpidinfo(12345); 
+
+print_r($pidifo); 
+
+Array 
+( 
+    [USER] => user 
+    [PID] => 12345 
+    [%CPU] => 0.0 
+    [%MEM] => 0.0 
+    [VSZ] => 1720 
+    [RSS] => 8 
+    [TT] => ?? 
+    [STAT] => Is 
+    [STARTED] => 6:00PM 
+    [TIME] => 0:00.01 
+    [COMMAND] => php someproces.php > logfile 
+) 
 
 
 // 使用 sys_get_temp_dir() 在目录里创建临时文件
