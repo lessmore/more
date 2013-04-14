@@ -59,7 +59,7 @@ cfg('dev',true);
 
 ////defalut controller
 //$Love->defalut_controller = 'abc';
-//$Love->defalut_act= 'abc';
+//$Love->defalut_action = 'abc';
 //$Love->defalut_arguments= array(1,2,3);
 
 Perfume();
@@ -86,7 +86,12 @@ class c_index{
     }
 
     //
-    public function abc_cdb(){
+    public function abc(){
+        echo 'www.slave.com/';
+    }
+
+    //protected private
+    private function _cdb(){
         echo 'www.slave.com/';
     }
 }

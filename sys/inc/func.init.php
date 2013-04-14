@@ -106,7 +106,6 @@ function client() {
     //Call('send_header', array(503));
     //Ed
 
-
     //通过Url打开debug //防止链接被记录,每10分钟的密钥变一次,如：ladybug=323451749823432432, 17498-05153(5日15点3x分)==12345
     if (isset($_GET['ladybug']) && (substr($_GET['ladybug'],5,5)-substr(date('jHi'),0,5))==12345){
         cfg('debug_threshold', 2);
@@ -134,7 +133,8 @@ function client() {
 
     //html display
     $Love->js = $Love->css = $Love->default_js = $Love->default_css = array('top'=>array(), 'mid'=>array(), 'low'=>array(), 'G'=>array());
-    //Ed
+
+    //*****/Ed
 
     //IE的iframe的cookie安全保存问题
     if($Love->is_ie) {
@@ -338,7 +338,8 @@ function call($func_name, $func_args=array()){
         $info = '';
 
         if (cfg('debug_threshold') > 0){
-            $file = array_shift(debug_backtrace());
+            $file = debug_backtrace();
+            $file = array_shift($file);
             $info .= ' on '.$file['file'].' line '.$file['line'];
             $info .= (is_string($func_name) && !in_array($func_name,array('tracy'))) ? ' [args] '.var_export($func_args,1).' '.get_last_error() : ' '.get_last_error();
         }
@@ -349,15 +350,14 @@ function call($func_name, $func_args=array()){
             $info = "[√] [call] $call_name".$info;
             if (cfg('debug_threshold') > 0){
                 static $call_time;
-                $info .= isset($call_time) ? (' [prevCall] '.round(microtime(true)-$call_time,7)).'s' : '';
+                $info .= isset($call_time) ? '[prevCall] '.round(microtime(true)-$call_time,7).'s' : '';
                 $call_time = microtime(true);
                 register_shutdown_function('tracy',$info);
             }
             return call_user_func_array($func_name,(array)$func_args);
         }
 
-        $info = "[×] [call] $call_name".$info;
-        register_shutdown_function('tracy',$info);
+        register_shutdown_function("tracy","[×] [call] $call_name".$info);
 
         if (in_array($call_name, array('exit','die'))){ //exit,die是语言结构不是函数，可又特别需要:-0
             cfg('dev') || exit(isset($func_args[0])&&is_string($func_args[0]) ? $func_args[0] : '');
@@ -367,8 +367,10 @@ function call($func_name, $func_args=array()){
         //call('page',array(404));
     } catch(Exception $e) {
         $info = "[T] [Catch] ".$e->getMessage()." ".$e->getFile()." on Line ".$e->getLine()." ".$e->getTraceAsString();
-        register_shutdown_function('tracy',$info);exit();
+        register_shutdown_function('tracy',$info);
     }
+
+    cfg('dev') || exit;
 }
 
 

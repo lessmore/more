@@ -31,6 +31,17 @@ return array(
 \-------------------------------------
     数据结构设计小贴士（随记）
 /-------------------------------------
+|
+|
+|
+|
+|
+|
+
+
+
+
+
 
 CREATE TABLE `timeline` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -84,6 +95,31 @@ CREATE TABLE `space_user` (
 
 
 
+
+什么是产品？
+1.产品定义：产品即SPU(Standard Product Unit)，全称 标准产品单元，是对某一类标准产品的共同特征属性的描述. 是商品信息共有属性的一种抽取。
+2.产品商品：商品是对进入销售周期的产品的一种描述, 它会在产品的基础上添加一些销售属性(比如卖家, 库存, 颜色,尺寸等等销售属性). 
+            SPU 是一个介于类目(仅叶子类目)和商品之间的概念, 是对类目的细化,是淘宝网标准化, 规范化运营的基础.不同的商家可以使用同一个产品。
+
+CREATE TABLE `space_spu` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tl` int unsigned NOT NULL COMMENT '管理员或用户的tl行为',
+  `name` varbinary(64) NOT NULL COMMENT '名称',
+  `ename` varbinary(64) NOT NULL COMMENT '名称',
+  `brand_id` int unsigned NOT NULL COMMENT '品牌id',
+  `series` varbinary(128) NOT NULL COMMENT '品牌系列',
+  `des` varbinary(3000) NOT NULL COMMENT '描述',
+  `photos` varbinary(255) NOT NULL COMMENT '封面，photo_id,p',
+  `type` int unsigned NOT NULL COMMENT '类型',
+  `created` int unsigned NOT NULL COMMENT '创建时间',
+  `updated` int unsigned NOT NULL COMMENT '修改时间',
+  `deleted` tinyint unsigned NOT NULL COMMENT '删除状态',
+  PRIMARY KEY (`id`),
+  KEY `tl` (`tl`),
+  KEY `brand_id` (`brand_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='产品SPU';
+
+
 CREATE TABLE `space_brand` (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '品牌Id',
   `name` varbinary(64) DEFAULT NULL COMMENT '品牌名称',
@@ -106,25 +142,6 @@ CREATE TABLE `space_brand` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='品牌';
 
 
-CREATE TABLE `space_spu` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `tl` int unsigned NOT NULL COMMENT '管理员或用户的tl行为',
-  `name` varbinary(64) NOT NULL COMMENT '名称',
-  `ename` varbinary(64) NOT NULL COMMENT '名称',
-  `brand_id` int unsigned NOT NULL COMMENT '品牌id',
-  `series` varbinary(128) NOT NULL COMMENT '品牌系列',
-  `des` varbinary(3000) NOT NULL COMMENT '描述',
-  `photos` varbinary(255) NOT NULL COMMENT '封面，photo_id,p',
-  `type` int unsigned NOT NULL COMMENT '类型',
-  `created` int unsigned NOT NULL COMMENT '创建时间',
-  `updated` int unsigned NOT NULL COMMENT '修改时间',
-  `deleted` tinyint unsigned NOT NULL COMMENT '删除状态',
-  PRIMARY KEY (`id`),
-  KEY `tl` (`tl`),
-  KEY `brand_id` (`brand_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='产品SPU';
-
-
 CREATE TABLE `space_item` (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '商品ID',
   `spu_id` int unsigned NOT NULL COMMENT '产品ID',
@@ -142,56 +159,31 @@ CREATE TABLE `space_item` (
   `freight` int unsigned NOT NULL COMMENT '运费x100',
   `location` varbinary(32) COMMENT '商品仓库地址',
   `Shipping` varbinary(32) COMMENT '全国',
+  `photos` varbenary(255) NOT NULL COMMENT '商家自定义图片ID',
+  `onsale` tinyint(1) NOT NULL DEFAULT '1' COMMENT '在售',
   `ct_pv` varbinary(32) COMMENT '全国',
   `ct_uv` varbinary(32) COMMENT '全国',
   `ct_review` int unsigned NOT NULL COMMENT '评价计数',
   `ct_sold` int unsigned NOT NULL COMMENT '销量计数',
-  `currency` varchar(60) DEFAULT 'RMB',
-  `imgId` int(11) unsigned DEFAULT NULL COMMENT '图片ID，用于指定商品显示的图片',
-  `picUrl` varchar(255) DEFAULT NULL COMMENT '图片地址',
-  `srcPicUrl` varchar(255) DEFAULT NULL COMMENT '图片来源URL',
-  `cid` int(11) unsigned DEFAULT NULL COMMENT '商品所在网站的分类',
-  `m_cids` varchar(255) DEFAULT NULL COMMENT '对应蘑菇街类目id,面包屑的形式，如：#85# #90#',
-  `m_cid` int(11) NOT NULL DEFAULT '1' COMMENT '商品大类',
-  `tag` text COMMENT '用于存储类别标签，方便建索引',
-  `keywords` varchar(200) DEFAULT NULL COMMENT '关键词，使用^分割，|分割名词和形容词',
-  `isShelf` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否下架 1为下架 ',
-  `extra` text COMMENT '扩展信息',
-  `created` int(11) unsigned NOT NULL COMMENT '添加时间',
-  `updated` int(11) unsigned NOT NULL,
-  `infoUpdated` int(11) NOT NULL DEFAULT '0' COMMENT '上次真正更新商品信息的时间',
-  `cfav` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '显示的喜欢数',
-  `zfav` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '有效喜欢数',
-  `creply` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '回复数',
-  `cshare` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '该商品被分享的次数，即对应推的条数',
-  `isDeleted` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '状态(0 => 正常, 1=> 被删除(用户不可见))',
-  `ctuStatus` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'CTU状态位',
-  `field1` int(11) NOT NULL DEFAULT '0' COMMENT '预留字段1',
-  `field2` int(11) NOT NULL DEFAULT '0' COMMENT '预留字段2',
-  `field3` int(11) NOT NULL DEFAULT '0' COMMENT '预留字段3',
-  PRIMARY KEY (`itemInfoId`),
-  UNIQUE KEY `idx_unique_numid` (`num_id`,`source`,`iid`),
-  KEY `idx_cid` (`cid`),
-  KEY `idx_m_cid` (`m_cid`),
-  KEY `idx_firstTwitterId` (`firstTwitterId`)
+  `ct_weight` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '商品权重',
+  `ct_fav` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '该商品被分享的次数，即对应推的条数',
+  `isDeleted` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '删除状态',
+  `created` int(11) unsigned NOT NULL COMMENT '创建时间',
+  `updated` int(11) unsigned NOT NULL COMMENT '修改时间',
+  PRIMARY KEY (`id`),
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='产品的商品关联';
 
 
 CREATE TABLE `space_photo` (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '图片ID',
-  `tl` int DEFAULT NULL COMMENT 'timeline',
+  `tl` int DEFAULT NULL COMMENT '图片行为bind',
   `src` varbinary(255) NOT NULL COMMENT '地址',
-  `source` varbinary(255) NOT NULL COMMENT '来源信息',
+  `alt` varbinary(255) NOT NULL COMMENT '来源信息',
   PRIMARY KEY (`id`),
   KEY `tl` (`tl`),
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='当我想到photoshop时，我确定用photo不用image'
 
 
-什么是产品？
-1、产品定义：
-    产品即SPU(Standard Product Unit)，全称 标准产品单元，是对某一类标准产品的共同特征属性的描述. 是商品信息共有属性的一种抽取。
-    我们要区分两种概念:产品和商品, 商品是对进入销售周期的产品的一种描述, 它会在产品的基础上添加一些销售属性(比如卖家, 库存, 颜色,尺寸等等销售属性). SPU 是一个介于类目(仅叶子类目)和商品之间的概念, 是对类目的细化,是淘宝网标准化, 规范化运营的基础.不同的商家可以使用同一个产品。
-2、产品规则：产品发布、产品标准
 
 
 
