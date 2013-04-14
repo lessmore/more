@@ -20,6 +20,26 @@ function Speakup(){
     defined('LADY') || call('exit',array('Need Lady To Keep Moving  :-0'));
 }
 
+/** 
+* ------------------------------------------
+* __autoload
+* ------------------------------------------
+*
+* function autoload($className){ include_once str_replace('_', DIRECTORY_SEPARATOR, $className).'.php';
+* } spl_autoload_register('autoload', false); //优先按自己注册的autoload来载入
+*
+*/
+function __autoload($class_name) {
+    if (strpos($class_name,'_')!==false){
+        $class_file = getcwd().'/'.str_replace('_','/',$class_name).'.php';//MVC
+    }else{
+        $class_file = cfg('class_path').'class.'.strtolower($class_name).'.php';//SYS
+    }
+
+    is_file($class_file) || call('exit',array('UnAutoLoad File '.$class_file));
+    require_once $class_file;
+}
+
 
 /*
 * ------------------------------------------
@@ -94,7 +114,7 @@ function client() {
     }
 
     /*
-    | $Love defalut initialize -------------------- Here */
+    - $Love defalut initialize -------------------- Here */
     global $Love;
 
     $Love->cwd = getcwd();
@@ -107,7 +127,6 @@ function client() {
 
     //Time of start request
     $Love->time = env('REQUEST_TIME','S',array('default'=>time()));
-
 
     //触发点设定(抽样
     $Love->sample_s_1_60 = !$Love->time%60;
@@ -262,7 +281,7 @@ function env($key,$type='gpc',array $options=array('default'=>null,'value'=>null
 * @param string $func_name 调用代码 4种组合 array($obj,'method') | array('class','method') | 'class::method',array($this,'self::dior') | function
 * @param array [args] 传递给方法的参数列表
 */
-function call($func_name, array $func_args=array()){
+function call($func_name, $func_args=array()){
     try{
         empty($func_name) && call("exit",array("!!Empty function name"));
 
@@ -287,7 +306,7 @@ function call($func_name, array $func_args=array()){
                 $func_name = array($obj,$method);
             }//Ed
 
-            //array(obj, 'method') 略处理
+            //array(obj,'method') 略处理
         }else{
             //'className::method' 处理 
             if ($pos=strpos($func_name,'::')){
@@ -300,6 +319,7 @@ function call($func_name, array $func_args=array()){
                     }
                 }
             }//Ed
+
             //'functionName' 处理
             else{
                 if (!function_exists($func_name)){
@@ -316,41 +336,38 @@ function call($func_name, array $func_args=array()){
         }
 
         $info = '';
-        $debug_threshold = -1;
 
-        if (cfg('debug_threshold') > $debug_threshold){
-            $file = debug_backtrace();
-            $file = array_shift($file);
+        if (cfg('debug_threshold') > 0){
+            $file = array_shift(debug_backtrace());
             $info .= ' on '.$file['file'].' line '.$file['line'];
-            $info .= (is_string($func_name) && !in_array($func_name,array('tracy'))) ? ' [args] '.var_export($func_args,1):'';
-            $info .= get_last_error();
+            $info .= (is_string($func_name) && !in_array($func_name,array('tracy'))) ? ' [args] '.var_export($func_args,1).' '.get_last_error() : ' '.get_last_error();
         }
 
         //参数2:false的意图为仅当函数或方法可真实调用时才返回true，举个例子，私有方法外部调用is_callable将返回false! 默认为false。
         //另外一点，对于非静态方法的声明，$call_name也会返回可调用形式class::method，所以即使你NB的想用静态，也不用刻意去声明静态。
-        if (is_callable($func_name,false, $call_name)){
+        if (is_callable($func_name,false,$call_name)){
             $info = "[√] [call] $call_name".$info;
-            if (cfg('debug_threshold') > $debug_threshold){
+            if (cfg('debug_threshold') > 0){
                 static $call_time;
                 $info .= isset($call_time) ? (' [prevCall] '.round(microtime(true)-$call_time,7)).'s' : '';
                 $call_time = microtime(true);
                 register_shutdown_function('tracy',$info);
             }
-
-            return call_user_func_array($func_name,$func_args);
-        } else {
-            $info = "[×] [call] $call_name".$info;
-            register_shutdown_function('tracy',$info);
-
-            if (in_array($call_name, array('exit','die'))){ //exit,die是语言结构不是函数，可又特别需要:-0
-                cfg('dev') || exit(isset($func_args[0])&&is_string($func_args[0]) ? $func_args[0] : '');
-            }
-            //虽然页面没找到，但我们可以帮他找到亲人
-            //call('page',array(404));
+            return call_user_func_array($func_name,(array)$func_args);
         }
+
+        $info = "[×] [call] $call_name".$info;
+        register_shutdown_function('tracy',$info);
+
+        if (in_array($call_name, array('exit','die'))){ //exit,die是语言结构不是函数，可又特别需要:-0
+            cfg('dev') || exit(isset($func_args[0])&&is_string($func_args[0]) ? $func_args[0] : '');
+        }
+
+        //虽然页面没找到，但我们可以帮他找到亲人
+        //call('page',array(404));
     } catch(Exception $e) {
-        $info .= (' '.$e->getMessage()." ".$e->getFile()." on Line ".$e->getLine()."----".$e->getCode()."----".$e->getTrace()."----".$e->getTraceAsString());
-        register_shutdown_function('tracy', $info);
+        $info = "[T] [Catch] ".$e->getMessage()." ".$e->getFile()." on Line ".$e->getLine()." ".$e->getTraceAsString();
+        register_shutdown_function('tracy',$info);exit();
     }
 }
 
@@ -367,23 +384,16 @@ function call($func_name, array $func_args=array()){
 function Tracy($info){
     global $Love;
 
-    if (!is_string($info)){
-        $info = var_export($info,true);
-    }
-
-    $error = get_last_error();
-    $info .= strpos($info,$error) ? ' '.$error : '';
+    is_string($info) || $info=var_export($info,true);
+    $info .= (($error=get_last_error()) && strpos($info,$error)===false) ? ' '.$error : '';
     $info = date("Y-m-d, H:d:s")." ".str_replace(dirname(SYS).'/','',$info);
 
-    if (cfg('debug_threshold')===2 and !$Love->is_ajax){
-        echo preg_replace(array("/=>&nbsp;&nbsp;'([^']*)'/","/'([^']*)'/"),array("<span style=\"color:#2b\">=>&nbsp;&nbsp;</span>'<span style=\"color:#c22\">\$1</span>'","'<span style='color:#09b'>\$1</span>'"), stripslashes(nl2br(str_replace(" ","&nbsp;&nbsp;",$info.PHP_EOL.str_pad('',168,'-').PHP_EOL))));//输出特别处理
+    if (cfg('debug_threshold')===2 && empty($Love->is_ajax)){
+        echo preg_replace(array("/=>&nbsp;&nbsp;'([^']*)'/","/'([^']*)'/"),array("<span style=\"color:#2b\">=>&nbsp;&nbsp;</span>'<span style=\"color:#c22\">\$1</span>'","'<span style='color:#09b'>\$1</span>'"), stripslashes(nl2br(str_replace(" ","&nbsp;&nbsp;",$info.PHP_EOL.str_pad('',168,'-').PHP_EOL))));//HTML友好输出
     }
 
-    $info = str_replace(array(PHP_EOL,'  '),array('',' '),$info).PHP_EOL;//log日志处理
-
     isset($Love) || $Love->error=array();
-    $Love->error[] = $info;
-   
+    $Love->error[] = $info = str_replace(array(PHP_EOL,'  '),array('',''),$info).PHP_EOL;;
     $dir = cfg('log_path').date('Ymd').'/';
     is_dir($dir) || mkdir($dir,0777,true);
     file_put_contents($dir.cfg('log_file_tracy'),$info,FILE_APPEND);
@@ -394,12 +404,17 @@ function Tracy($info){
 * ------------------------------------------
 *  get_last_error
 * ------------------------------------------
-* capture 最近一次错误
+*  Capture 最近一次错误
+*  配合register_shutdown_function可捕获fatal致命性错误
+*
 */
 function get_last_error(){
     if ($error = error_get_last()){
+        if ($error['type']==1){
+            //Fatal error special handle, such as sms
+        }
         $error_type = array (
-            E_ERROR             => 'ERROR',
+            E_ERROR             => 'FATAL ERROR',//ERROR
             E_WARNING           => 'WARNING',
             E_PARSE             => 'PARSING ERROR',
             E_NOTICE            => 'NOTICE',
@@ -425,44 +440,60 @@ function get_last_error(){
 *  Router
 * ------------------------------------------
 * 
-* @param string $url path?query#anchor | http://domain/path?query
-* @param string $route_rule url parse
+* @param string $uri such as $_SERVER['REQUEST_URI']
 */
-function router($request_uri=null,$route_rule=''){
+function router($request_uri=null){
     global $Love;
 
-    empty($route_rule) && $route_rule="/dir-file--act/arg-arg-arg.html?abc=cbd"; //模型定制@todo
-    isset($Love->route_rule) || $Love->route_rule=$route_rule;
+    if (!isset($Love->route_rule)){
+        $Love->route_rule = array(
+            "domain.com/(index.html)"     => "domain_dir/c/  c_index::index()",
+            "domain.com/a.html"           => "...            c_index::a()",
+            "domain.com/a-b.html"         => "...            c_index::a('b')",
+            "domain.com/a-b-c.html"       => "...            c_index::a('b','c')",
 
-    empty($request_uri) && $request_uri=$_SERVER['REQUEST_URI']; 
-    isset($Love->url) || $Love->url=$request_uri;
- 
+            "domain.com/a/(index.html)"   => "...            c_a::index()",
+            "domain.com/a/b.html"         => "...            c_a::b()",
+            "domain.com/a-b/c.html"       => "...            c_a_b::c()",
+            "domain.com/a-b/c-d-e.html"   => "...            c_a_b::c('d','e')",
+
+            "domain.com/a-b-c/d-e-f?x=y"  => "ajax",
+        );
+    }
+    if (strpos($request_uri,'/')===false){
+        call('exit', array('Bad Request',$request_uri));
+    }
+
+    $Love->url = ($request_uri = $request_uri ? $request_uri : $_SERVER['REQUEST_URI']); 
+    ($pos = strpos($request_uri,'?')) && $request_uri=substr($request_uri,0,$pos);
     $uri = pathinfo(trim($request_uri));
-
-    if (substr($request_uri,-1,1)!=='/' && isset($uri['extension']) && strpos($uri['extension'],'htm')!==0){
-        call('send_header', array(404)); //php?abc 禁止非htm/html解析  =======  /xxx.html/  当作目录处理  PS:/xx.html/?x=y 这种本来xx.html就当目录处理
-    }                                                    
-
     $uri['dirname'] = trim($uri['dirname'],'/');
 
-    if ($uri['dirname']){
-        $controller = explode('-',$uri['dirname']);
-        $action = array_pop($controller);
-        $controller = implode('_',$controller);
+    if (isset($uri['extension'])){ //有且允许html,htm的后缀
+        if (strpos($uri['extension'],'htm')!==0){
+            $Love->controller = '/dev/null';
+        }else{
+            if ($uri['dirname']){
+                $Love->controller = str_replace('-','_',$uri['dirname']);
+            }
+
+            $Love->arguments = explode('-',$uri['filename']);
+            $Love->action = array_shift($Love->arguments);
+        }
+    } else{
+        $Love->controller = str_replace('-','_',($uri['dirname'] ? $uri['dirname'] : $uri['filename']));
+        if ($uri['dirname']){
+            $Love->arguments = explode('-',$uri['filename']);
+            $Love->action = array_shift($Love->arguments);
+        }
     }
-    $arguments = $uri['filename']=='' ? '' : explode('-', $uri['filename']);
 
-    //可在public入口文件自定默认controller,action
-    $controller = (empty($controller) ? (empty($Love->controller) ? 'index' : $Love->controller) : $controller);
-    $action = (empty($action) ? (empty($Love->action) ? 'index' : $Love->action) : $action);
-    $arguments = (empty($arguments) ? (empty($Love->arguments) ? array() : $Love->arguments) : $arguments);
+    $Love->controller = 'c_'.(empty($Love->controller) ? (empty($Love->defalut_controller) ? 'index' : $Love->defalut_controller) : $Love->controller);
+    $Love->action = (empty($Love->action) ? (empty($Love->defalut_action) ? 'index' : $Love->default_action) : $Love->action);
+    $Love->arguments = (empty($Love->arguments) ? (empty($Love->defalut_arguments) ? array() : $Love->defalut_arguments) : $Love->arguments);
+//var_dump($Love->controller,$Love->action,$Love->arguments);die;
 
-    $controller = 'c_'.$controller;
-    $Love->controller = $controller;
-    $Love->action = $action;
-    $Love->arguments = $arguments;
-
-    call(array($Love->controller,$Love->action),$Love->arguments);
+    call(array($Love->controller,$Love->action),$Love->arguments);//确保不会执行到shell函数
 }
 
 
@@ -533,6 +564,7 @@ function css($css,$pos='top'){
 }
 function html($file='',$data=array(),$return=false){
     global $Love;
+
     $pub_domain = cfg('pub_domain');
     $data['IMG'] = $pub_domain.'img/';
 
@@ -548,7 +580,7 @@ function html($file='',$data=array(),$return=false){
         isset($Love->html) || $Love->html=array();
         $Love->html[] = array('file' => $file,'data'=>$data);
     }else{
-        if ($Love->is_ajax){
+        if (!empty($Love->is_ajax)){
             return ;
         }
 
@@ -599,26 +631,4 @@ function html($file='',$data=array(),$return=false){
             }
         }
     }
-}
-
-
-/** 
-* ------------------------------------------
-* __autoload
-* ------------------------------------------
-*
-* function autoload($className){ include_once str_replace('_', DIRECTORY_SEPARATOR, $className).'.php';
-* } spl_autoload_register('autoload', false); //优先按自己注册的autoload来载入
-*
-*/
-function __autoload($class_name) {
-    if (strpos($class_name,'_')!==false){
-        $class_file = getcwd().'/'.str_replace('_','/',$class_name).'.php';//MVC
-    }else{
-        $class_file = cfg('class_path').'class.'.strtolower($class_name).'.php';//SYS
-    }
-
-    is_file($class_file) || call('exit',array('UnAutoLoad File '.$class_file));
-
-    require_once $class_file;
 }

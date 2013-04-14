@@ -11,58 +11,33 @@ return array(
     *
     * 100 -> space
     * 000 -> behaivor
-    * 001 -> nesting
+    * 001 -> behaivor nesting
     * @todo most AI
     */
     'behavior' => array(
         '100000000' => array('desc' => '','def' => ''),
         '100100000' => array('desc' => '','def' => ''),
 
-        '100200000' => array('desc' => '','json' => ''),
-        '101000000' => array('desc' => '','json' => ''),
-
-        '100000000' => array('desc' => '','json' => ''),
-        '100000000' => array('desc' => '','json' => ''),
-
-        '100000000' => array('desc' => '','json' => ''),
-        '100000000' => array('desc' => '','json' => ''),
-
-        '100000000' => array('desc' => '','json' => ''),
-        '100000000' => array('desc' => '','json' => ''),
-
-        '100000000' => array('desc' => '','json' => ''),
-        '100000000' => array('desc' => '','json' => ''),
-
-        '100000000' => array('desc' => '','json' => ''),
-        '100000000' => array('desc' => '','json' => ''),
+        '100200000' => array('desc' => '','def' => ''),
+        '101000000' => array('desc' => '','def' => ''),
     )
 );
-
-
-
-
-
 
 
 
 /*
 || behavior || attribute & state
 ||
-
-CREATE TABLE `space_sql` (
-  `id` int unsigned NOT NULL COMMENT '时间线ID',
-  `sql` blob NOT NULL COMMENT '存储空间影响的sql',
-  KEY `id` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='时光机(behavior)'
-
+\-------------------------------------
+    数据结构设计小贴士（随记）
+/-------------------------------------
 
 CREATE TABLE `timeline` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `when` int unsigned NOT NULL COMMENT '时间轴',
   `who` int unsigned NOT NULL COMMENT '主体',
   `how` int unsigned NOT NULL COMMENT '行为',
-  `what` int unsigned NOT NULL COMMENT '状态',
-  `pos` tinyint unsigned NOT NULL COMMENT '位置',
+  `what` int unsigned NOT NULL COMMENT '状态,读取how定义绑定what到指向关联内容表',
   `prep` int unsigned NOT NULL COMMENT '预备',
   `brep` int unsigned NOT NULL COMMENT '预备',
   PRIMARY KEY (`id`),
@@ -71,13 +46,19 @@ CREATE TABLE `timeline` (
   KEY `how` (`how`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='时间线(behavior), 类似加分行为：用户一条，管理员一条'
 
+CREATE TABLE `space_sql` (
+  `id` int unsigned NOT NULL COMMENT '时间线ID',
+  `sql` blob NOT NULL COMMENT '存储空间影响的sql',
+  KEY `id` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='时光机(behavior)'
+
 
 CREATE TABLE `space_what` (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '',
   `des` varbinary(1024) NOT NULL COMMENT '一句话简评？',
-  `def` blob NOT NULL COMMENT 'json for coding ?',
+  `def` blob NOT NULL COMMENT 'json for coding ?',//结构是可变的？不可排序？
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='行为定义'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='what迷茫区'
 
 
 CREATE TABLE `space_how` (
@@ -103,47 +84,115 @@ CREATE TABLE `space_user` (
 
 
 
-
-
 CREATE TABLE `space_brand` (
-  `brandId` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '品牌Id',
-  `name` varchar(64) DEFAULT NULL COMMENT '品牌名称',
-  `ename` varchar(64) DEFAULT NULL COMMENT '英文名',
-  `fletter` tinyint(1) DEFAULT NULL COMMENT '首字母索引1-26→A-Z', 
-  `desc` text COMMENT '品牌描述',
-  `nation` varchar(64) DEFAULT NULL COMMENT '国家地域',
-  `logo` varchar(255) DEFAULT NULL COMMENT '品牌logo',
-  `imgs` varchar(1024) DEFAULT NULL COMMENT '品牌图集;隔开',
-  `categoryId` int(11) unsigned NOT NULL COMMENT '分类ID',
-  `parentId` int(11) unsigned NOT NULL COMMENT '父品牌Id',
-  `website` varchar(128) DEFAULT NULL COMMENT '官方网址',
-  `weibourls` varchar(512) DEFAULT NULL COMMENT '微博地址;分号隔开',
-  `createTime` int(11) NOT NULL DEFAULT '0' COMMENT '品牌创立时间',
-  `isHot` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否热门，0冷门，10热门，20知名',
-  `cspu` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '品牌下的产品计数',
-  `created` int(11) unsigned NOT NULL COMMENT '创建时间',
-  `updated` int(11) unsigned NOT NULL COMMENT '更新时间',
-  `isDeleted` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '删除状态: 0正常，1删除',
-  PRIMARY KEY (`brandId`),
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '品牌Id',
+  `name` varbinary(64) DEFAULT NULL COMMENT '品牌名称',
+  `ename` varbinary(64) DEFAULT NULL COMMENT '英文名',
+  `des` blob COMMENT '品牌描述',
+  `nation` varbinary(64) DEFAULT NULL COMMENT '国家地域',
+  `logo` varbinary(255) DEFAULT NULL COMMENT '品牌logo',
+  `imgs` varbinary(1024) DEFAULT NULL COMMENT '品牌图集;隔开',
+  `website` varbinary(1024) DEFAULT NULL COMMENT '官方网址',
+  `birth` int NOT NULL DEFAULT '0' COMMENT '品牌创立时间',
+  `rank` tinyint NOT NULL DEFAULT '0' COMMENT '热门知名分级',
+  `ctspu` mediumint unsigned NOT NULL DEFAULT '0' COMMENT '品牌下的产品数',
+  `idx_name` tinyint DEFAULT NULL COMMENT '首字母索引1-26→A-Z', 
+  `parent` int unsigned NOT NULL COMMENT '父品牌Id',
+  `created` int unsigned NOT NULL COMMENT '创建时间',
+  `updated` int unsigned NOT NULL COMMENT '更新时间',
+  `deleted` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '删除状态: 0正常',
+  PRIMARY KEY (`id`),
   KEY `name` (`name`),
-  KEY `idx_fletter` (`fletter`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='品牌';
 
 
-
-
-
-
-CREATE TABLE `space_crawl` (
-  `uid` int unsigned NOT NULL AUTO_INCREMENT,
-  `uname` varbinary(32) NOT NULL COMMENT '用户名', `upss` varbinary(32) NOT NULL COMMENT '用户密码',
-  `utype` tinyint unsigned NOT NULL COMMENT '用户类型',
-  `ufrom` tinyint unsigned NOT NULL COMMENT '用户来源',
-  `deleted` tinyint unsigned NOT NULL COMMENT '状态',
+CREATE TABLE `space_spu` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tl` int unsigned NOT NULL COMMENT '管理员或用户的tl行为',
+  `name` varbinary(64) NOT NULL COMMENT '名称',
+  `ename` varbinary(64) NOT NULL COMMENT '名称',
+  `brand_id` int unsigned NOT NULL COMMENT '品牌id',
+  `series` varbinary(128) NOT NULL COMMENT '品牌系列',
+  `des` varbinary(3000) NOT NULL COMMENT '描述',
+  `photos` varbinary(255) NOT NULL COMMENT '封面，photo_id,p',
+  `type` int unsigned NOT NULL COMMENT '类型',
   `created` int unsigned NOT NULL COMMENT '创建时间',
-  `updeted` int unsigned NOT NULL COMMENT '更新时间',
-  PRIMARY KEY (`uid`),
-  KEY `uname` (`uname`)
-) ENGINE=InnoDB AUTO_INCREMENT=10000 DEFAULT CHARSET=utf8 COMMENT=''
+  `updated` int unsigned NOT NULL COMMENT '修改时间',
+  `deleted` tinyint unsigned NOT NULL COMMENT '删除状态',
+  PRIMARY KEY (`id`),
+  KEY `tl` (`tl`),
+  KEY `brand_id` (`brand_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='产品SPU';
 
-*/
+
+CREATE TABLE `space_item` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '商品ID',
+  `spu_id` int unsigned NOT NULL COMMENT '产品ID',
+  `platform` varbinary(20) NOT NULL COMMENT '商品来源,taobao',
+  `pf_item_id` varbinary(32) unsigned NOT NULL COMMENT '商品来源的ID',
+  `created_tl` int unsigned NOT NULL DEFAULT '0' COMMENT '创建的行为',
+  `seller_tl` int unsigned NOT NULL DEFAULT '0' COMMENT '卖家的最后行为',
+  `buyer_tl` int unsigned NOT NULL DEFAULT '0' COMMENT '买家的买家行为',
+  `alipay` varbinary(64) NOT NULL COMMENT '支付宝ID',
+  `title` varbinary(255) NOT NULL COMMENT '商品名称',
+  `seller` varbinary(32) NOT NULL COMMENT '商家名称',
+  `price` int unsigned NOT NULL COMMENT '商品价格x100',
+  `quantity` int NOT NULL COMMENT '商品可售数量,负的表示预定',
+  `discount` tinyint unsigned NOT NULL COMMENT '折扣0~100',
+  `freight` int unsigned NOT NULL COMMENT '运费x100',
+  `location` varbinary(32) COMMENT '商品仓库地址',
+  `Shipping` varbinary(32) COMMENT '全国',
+  `ct_pv` varbinary(32) COMMENT '全国',
+  `ct_uv` varbinary(32) COMMENT '全国',
+  `ct_review` int unsigned NOT NULL COMMENT '评价计数',
+  `ct_sold` int unsigned NOT NULL COMMENT '销量计数',
+  `currency` varchar(60) DEFAULT 'RMB',
+  `imgId` int(11) unsigned DEFAULT NULL COMMENT '图片ID，用于指定商品显示的图片',
+  `picUrl` varchar(255) DEFAULT NULL COMMENT '图片地址',
+  `srcPicUrl` varchar(255) DEFAULT NULL COMMENT '图片来源URL',
+  `cid` int(11) unsigned DEFAULT NULL COMMENT '商品所在网站的分类',
+  `m_cids` varchar(255) DEFAULT NULL COMMENT '对应蘑菇街类目id,面包屑的形式，如：#85# #90#',
+  `m_cid` int(11) NOT NULL DEFAULT '1' COMMENT '商品大类',
+  `tag` text COMMENT '用于存储类别标签，方便建索引',
+  `keywords` varchar(200) DEFAULT NULL COMMENT '关键词，使用^分割，|分割名词和形容词',
+  `isShelf` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否下架 1为下架 ',
+  `extra` text COMMENT '扩展信息',
+  `created` int(11) unsigned NOT NULL COMMENT '添加时间',
+  `updated` int(11) unsigned NOT NULL,
+  `infoUpdated` int(11) NOT NULL DEFAULT '0' COMMENT '上次真正更新商品信息的时间',
+  `cfav` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '显示的喜欢数',
+  `zfav` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '有效喜欢数',
+  `creply` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '回复数',
+  `cshare` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '该商品被分享的次数，即对应推的条数',
+  `isDeleted` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '状态(0 => 正常, 1=> 被删除(用户不可见))',
+  `ctuStatus` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'CTU状态位',
+  `field1` int(11) NOT NULL DEFAULT '0' COMMENT '预留字段1',
+  `field2` int(11) NOT NULL DEFAULT '0' COMMENT '预留字段2',
+  `field3` int(11) NOT NULL DEFAULT '0' COMMENT '预留字段3',
+  PRIMARY KEY (`itemInfoId`),
+  UNIQUE KEY `idx_unique_numid` (`num_id`,`source`,`iid`),
+  KEY `idx_cid` (`cid`),
+  KEY `idx_m_cid` (`m_cid`),
+  KEY `idx_firstTwitterId` (`firstTwitterId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='产品的商品关联';
+
+
+CREATE TABLE `space_photo` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '图片ID',
+  `tl` int DEFAULT NULL COMMENT 'timeline',
+  `src` varbinary(255) NOT NULL COMMENT '地址',
+  `source` varbinary(255) NOT NULL COMMENT '来源信息',
+  PRIMARY KEY (`id`),
+  KEY `tl` (`tl`),
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='当我想到photoshop时，我确定用photo不用image'
+
+
+什么是产品？
+1、产品定义：
+    产品即SPU(Standard Product Unit)，全称 标准产品单元，是对某一类标准产品的共同特征属性的描述. 是商品信息共有属性的一种抽取。
+    我们要区分两种概念:产品和商品, 商品是对进入销售周期的产品的一种描述, 它会在产品的基础上添加一些销售属性(比如卖家, 库存, 颜色,尺寸等等销售属性). SPU 是一个介于类目(仅叶子类目)和商品之间的概念, 是对类目的细化,是淘宝网标准化, 规范化运营的基础.不同的商家可以使用同一个产品。
+2、产品规则：产品发布、产品标准
+
+
+
+

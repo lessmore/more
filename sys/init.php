@@ -36,11 +36,6 @@ require SYS.'inc/func.init.php';
 
 
 
-
-
-
-
-
 /*
  ---------------------------------------------------------------------------------
 |
@@ -57,9 +52,15 @@ require_once path.'/../../sys/init.php';
 cfg('debug_threshold',2);
 cfg('dev',true);
 
+////注册回调
 //call('reg', array('top',array('pro_start')));
 //call('reg', array('top',array('showIncTree')));
 //call('reg', array('low',array('pro_end')));
+
+////defalut controller
+//$Love->defalut_controller = 'abc';
+//$Love->defalut_act= 'abc';
+//$Love->defalut_arguments= array(1,2,3);
 
 Perfume();
 
@@ -82,6 +83,11 @@ class c_index{
         $data['header'] = call('html',array('index.html',array(),1));
         $data['footer'] = call('html',array('index.html',array(),1));
         call('html', array('index.html',$data));
+    }
+
+    //
+    public function abc_cdb(){
+        echo 'www.slave.com/';
     }
 }
 
