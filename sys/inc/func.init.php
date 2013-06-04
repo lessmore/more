@@ -72,15 +72,14 @@ function Perfume(){
 * IP, Attacks clear
 *
 */
-function client() {
+function client(){
 
     //安全等，此段不使用env环境变量
     //Terminal//Web//mobile//Ed
     $is_cli = (PHP_SAPI=='cli');
 
     //Client Fileter ----
-    if (empty($_SERVER['HTTP_USER_AGENT'])
-        || empty($_SERVER['HTTP_ACCEPT'])
+    if (!$is_cli && (empty($_SERVER['HTTP_USER_AGENT']) || empty($_SERVER['HTTP_ACCEPT']))
         ) {//|| $_COOKIE['_domainvid=']    cookie有问题？
         call('send_header', array(404));
     }
@@ -196,11 +195,9 @@ function cfg($key,$value=null){
 
     if (!isset($Love->cfg[$cfg_name])){
         $files = array('init',env('SERVER_NAME','S'));//可对单个域名下另配置或覆盖默认//$files = glob(CFG_PATH.'cfg.*.php');
-        if (!empty($files)){
-            foreach($files as $file){
-                $file = SYS.'cfg/cfg.'.strtolower($file).'.php';
-                is_file($file) && $Love->cfg=array_merge((array)$Love->cfg, (array) include_once $file);
-            }
+        foreach($files as $file){
+            $file = SYS.'cfg/cfg.'.strtolower($file).'.php';
+            is_file($file) && $Love->cfg=array_merge((array) $Love->cfg, (array) include_once $file);
         }
     }
 
@@ -237,7 +234,7 @@ function env($key,$type='gpc',array $options=array('default'=>null,'value'=>null
             case !(strpos($type,'s')!==false && isset($_SESSION[$key])):$bingo=$_SESSION[$key]; break;
             case !(strpos($type,'S')!==false && isset($_SERVER[$key])): $bingo=$_SERVER[$key];  break;
             case !(strpos($type,'E')!==false && isset($_ENV[$key])):    $bingo=$_ENV[$key];     break;
-            case !(strpos($type,'f')!==false && isset($_FILES[$key])):  $bingo=$_FILES[$key];   break;
+            case !(strpos($type,'F')!==false && isset($_FILES[$key])):  $bingo=$_FILES[$key];   break;
             case !isset($GLOBALS[$key]): $bingo=$GLOBALS[$key]; break;
         }
 
@@ -344,7 +341,7 @@ function call($func_name, $func_args=array()){
             $info .= (is_string($func_name) && !in_array($func_name,array('tracy'))) ? ' [args] '.var_export($func_args,1).' '.get_last_error() : ' '.get_last_error();
         }
 
-        //参数2:false的意图为仅当函数或方法可真实调用时才返回true，举个例子，私有方法外部调用is_callable将返回false! 默认为false。
+        //参数2:false的意图为仅当函数或方法可真实调用时才返回true，举个例子，外部调用私有方法is_callable将返回false! 默认为false。
         //另外一点，对于非静态方法的声明，$call_name也会返回可调用形式class::method，所以即使你NB的想用静态，也不用刻意去声明静态。
         if (is_callable($func_name,false,$call_name)){
             $info = "[√] [call] $call_name".$info;
@@ -391,6 +388,7 @@ function Tracy($info){
     $info = date("Y-m-d, H:d:s")." ".str_replace(dirname(SYS).'/','',$info);
 
     if (cfg('debug_threshold')===2 && empty($Love->is_ajax)){
+        //highlight_string
         echo preg_replace(array("/=>&nbsp;&nbsp;'([^']*)'/","/'([^']*)'/"),array("<span style=\"color:#2b\">=>&nbsp;&nbsp;</span>'<span style=\"color:#c22\">\$1</span>'","'<span style='color:#09b'>\$1</span>'"), stripslashes(nl2br(str_replace(" ","&nbsp;&nbsp;",$info.PHP_EOL.str_pad('',168,'-').PHP_EOL))));//HTML友好输出
     }
 
@@ -493,9 +491,9 @@ function router($request_uri=null){
     $Love->controller = 'c_'.(empty($Love->controller) ? (empty($Love->defalut_controller) ? 'index' : $Love->defalut_controller) : $Love->controller);
     $Love->action = (empty($Love->action) ? (empty($Love->defalut_action) ? 'index' : $Love->default_action) : $Love->action);
     $Love->arguments = (empty($Love->arguments) ? (empty($Love->defalut_arguments) ? array() : $Love->defalut_arguments) : $Love->arguments);
-//var_dump($Love->controller,$Love->action,$Love->arguments);die;
+    //var_dump($Love->controller,$Love->action,$Love->arguments);die;
 
-    call(array($Love->controller,$Love->action),$Love->arguments);//确保不会执行到shell函数
+    call(array($Love->controller,$Love->action),$Love->arguments);//本身带c_确保不会执行到shell函数
 }
 
 

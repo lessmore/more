@@ -61,7 +61,7 @@ CREATE TABLE `space_sql` (
   `id` int unsigned NOT NULL COMMENT '时间线ID',
   `sql` blob NOT NULL COMMENT '存储空间影响的sql',
   KEY `id` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='时光机(behavior)'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='时光机(behavior)(与用户有关)'
 
 
 CREATE TABLE `space_what` (
@@ -102,7 +102,7 @@ CREATE TABLE `space_user` (
             SPU 是一个介于类目(仅叶子类目)和商品之间的概念, 是对类目的细化,是淘宝网标准化, 规范化运营的基础.不同的商家可以使用同一个产品。
 
 CREATE TABLE `space_spu` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '产品ID',
   `tl` int unsigned NOT NULL COMMENT '管理员或用户的tl行为',
   `name` varbinary(64) NOT NULL COMMENT '名称',
   `ename` varbinary(64) NOT NULL COMMENT '名称',
@@ -161,8 +161,8 @@ CREATE TABLE `space_item` (
   `Shipping` varbinary(32) COMMENT '全国',
   `photos` varbenary(255) NOT NULL COMMENT '商家自定义图片ID',
   `onsale` tinyint(1) NOT NULL DEFAULT '1' COMMENT '在售',
-  `ct_pv` varbinary(32) COMMENT '全国',
-  `ct_uv` varbinary(32) COMMENT '全国',
+  `ct_pv` int unsigned NOT NULL COMMENT 'pv',
+  `ct_uv` int unsigned NOT NULL COMMENT 'uv',
   `ct_review` int unsigned NOT NULL COMMENT '评价计数',
   `ct_sold` int unsigned NOT NULL COMMENT '销量计数',
   `ct_weight` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '商品权重',
@@ -174,6 +174,7 @@ CREATE TABLE `space_item` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='产品的商品关联';
 
 
+
 CREATE TABLE `space_photo` (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT '图片ID',
   `tl` int DEFAULT NULL COMMENT '图片行为bind',
@@ -183,6 +184,15 @@ CREATE TABLE `space_photo` (
   KEY `tl` (`tl`),
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='当我想到photoshop时，我确定用photo不用image'
 
+
+CREATE TABLE `space_visitor` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `url` varbinary(255) COMMENT 'canonical url',
+  `uv` int unsigned NOT NULL COMMENT 'uv',
+  `pv` int unsigned NOT NULL COMMENT 'pv',
+  PRIMARY KEY (`id`),
+  KEY `idx_url` (`url`),
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='当我想到photoshop时，我确定用photo不用image'
 
 
 

@@ -10,7 +10,7 @@ class c_index{
 
         $data = array('test' => 'abc');
         //$data['header'] = call('html',array('index.html',array(),1));
-        $data['footer'] = call('html',array('index.html',array(),1));
+        //$data['footer'] = call('html',array('index.html',array(),1));
         call('html', array('index.html',$data));
     }
 
