@@ -36,6 +36,27 @@ return array(
     #load config, skip security check
     'dev'               => false,
 
+    #shell color
+    'clicls'           => array(
+        'none'		=> "\033[0m",
+        'black'		=> "\033[1;30m",
+        'red'		=> "\033[1;31m",
+        'green'		=> "\033[1;32m",
+        'yellow'    => "\033[1;33m",
+        'blue'		=> "\033[1;34m",
+        'purple'	=> "\033[1;35m",
+        'cyan'		=> "\033[1;36m",
+        'white'		=> "\033[1;37m",
+        'off'       => "\033[0m",//关闭所有属性  
+        'hlight'    => "\033[1m",//设置高亮度  
+        'uline'     => "\033[4m",//下划线  
+        'shan'      => "\033[5m",//闪烁  
+        'fan'       => "\033[7m",//反显  
+        'xiao'      => "\033[8m",//消隐  
+        //"\033[30m   --   \033[37m",//设置前景色  
+        //"\033[40m   --   \033[47m",//设置背景色
+    ),
+
 
     # domain settings
     'idx_domain'        => 'bulaidian.com',

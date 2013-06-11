@@ -7,7 +7,7 @@
 | 当页面空白时
 | 一，php -l 本文件
 | 二，tail -f /apache2/error_log
-| 
+| 三，强类型的function return type能避免大部分意料外的BUG ..(int), (bool), (float), (double), (string), (array), (object), (unset) - 转换为 NULL (PHP 5) 
 */
 Speakup();
 
@@ -19,6 +19,7 @@ Speakup();
 function Speakup(){
     defined('LADY') || call('exit',array('Need Lady To Keep Moving  :-0'));
 }
+
 
 /** 
 * ------------------------------------------
@@ -61,8 +62,10 @@ function Perfume(){
     call('reg', array('top'));
     call('reg', array('mid'));
     call('reg', array('low'));
-}
 
+    register_shutdown_function('tracy',array('info' => '☊ ','call' => 'php time','proc' => '↻ '.ms(1)));
+    register_shutdown_function('tracy',array('info' => '☊ ','call' => 'web time','proc' => '↻ '.ms(2,5)));
+}
 
 /*
 * ------------------------------------------
@@ -94,8 +97,9 @@ function client(){
     } else {
         $user_ip = $_SERVER['REMOTE_ADDR'];
     }
-    if (preg_match('/^(192\.168|10|127\.(0|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\./', $user_ip)) {//内网或伪造成内网IP的用户, 127实际只有0,16-31
-        call('send_header', array(404));
+
+    if (!cfg('dev') && preg_match('/^(192\.168|10|127\.(0|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\./', $user_ip)) {
+        call('send_header', array(404));//(非开发模式下)内网或伪造成内网IP的用户, 127实际只有0,16-31
     }//Ed
 
     //Spider
@@ -108,7 +112,7 @@ function client(){
     //通过Url打开debug //防止链接被记录,每10分钟的密钥变一次,如：ladybug=323451749823432432, 17498-05153(5日15点3x分)==12345
     if (isset($_GET['ladybug']) && (substr($_GET['ladybug'],5,5)-substr(date('jHi'),0,5))==12345){
         cfg('debug_threshold', 2);
-        call('tracy',array('!! DEBUG OPENED BY URL QUERY STRING'));
+        call('tracy',array('info'=>'☢ Debug opened by url query string'));
     }
 
     /*
@@ -122,9 +126,6 @@ function client(){
     $Love->is_ie = stripos($_SERVER['HTTP_USER_AGENT'], "MSIE");
     $Love->is_ajax = ('XMLHttpRequest'==env('HTTP_X_REQUESTED_WITH','S'));
     $Love->is_flash = (strpos(env('HTTP_USER_AGENT','S'),'Shockwave Flash')!==false);
-
-    //Time of start request
-    $Love->time = env('REQUEST_TIME','S',array('default'=>time()));
 
     //触发点设定(抽样
     $Love->sample_s_1_60 = !$Love->time%60;
@@ -332,43 +333,46 @@ function call($func_name, $func_args=array()){
             }//Ed
         }
 
-        $info = '';
+        $info = array('time'=> date('H:i:s'));
 
         if (cfg('debug_threshold') > 0){
             $file = debug_backtrace();
-            $file = array_shift($file);
-            $info .= ' on '.$file['file'].' line '.$file['line'];
-            $info .= (is_string($func_name) && !in_array($func_name,array('tracy'))) ? ' [args] '.var_export($func_args,1).' '.get_last_error() : ' '.get_last_error();
+            $info['file'] = array_shift($file);
+            $info['args'] = (is_string($func_name) && !in_array($func_name,array('tracy'))) ? var_export($func_args,1) : '';
+            $info['erro'] = get_last_error();
         }
 
         //参数2:false的意图为仅当函数或方法可真实调用时才返回true，举个例子，外部调用私有方法is_callable将返回false! 默认为false。
         //另外一点，对于非静态方法的声明，$call_name也会返回可调用形式class::method，所以即使你NB的想用静态，也不用刻意去声明静态。
         if (is_callable($func_name,false,$call_name)){
-            $info = "[√] [call] $call_name".$info;
+            $info['info'] = "☀ ";
+            $info['call'] = $call_name;
             if (cfg('debug_threshold') > 0){
-                static $call_time;
-                $info .= isset($call_time) ? '[prevCall] '.round(microtime(true)-$call_time,7).'s' : '';
-                $call_time = microtime(true);
+                $info['proc'] = '⇡ '.ms().s();
                 register_shutdown_function('tracy',$info);
             }
             return call_user_func_array($func_name,(array)$func_args);
+        }else{
+            $info['info'] = "☂ ";
+            $info['call'] = $call_name;
+            $info['proc'] = '↺ '.ms(1);
         }
 
-        register_shutdown_function("tracy","[×] [call] $call_name".$info);
-
-        if (in_array($call_name, array('exit','die'))){ //exit,die是语言结构不是函数，可又特别需要:-0
+        register_shutdown_function("tracy",$info);
+        if (in_array($call_name, array('exit','die'))){//exit,die是语言结构不是函数，可又特别需要:-0
             cfg('dev') || exit(isset($func_args[0])&&is_string($func_args[0]) ? $func_args[0] : '');
         }
 
         //虽然页面没找到，但我们可以帮他找到亲人
         //call('page',array(404));
     } catch(Exception $e) {
-        $info = "[T] [Catch] ".$e->getMessage()." ".$e->getFile()." on Line ".$e->getLine()." ".$e->getTraceAsString();
+        $info['info'] = "☁  ".$e->getMessage()." ".$e->getFile()." on Line ".$e->getLine()." ".$e->getTraceAsString();
         register_shutdown_function('tracy',$info);
     }
 
     cfg('dev') || exit;
 }
+
 
 
 /*
@@ -378,25 +382,43 @@ function call($func_name, $func_args=array()){
 * Tracy
 * 翠西(女子名,来源:法国.涵意:市场小径)
 *
-* @param string $info
+* @param string $info [sleep(2) step by step]
 */
 function Tracy($info){
     global $Love;
+    $Love->errno++;
 
-    is_string($info) || $info=var_export($info,true);
-    $info .= (($error=get_last_error()) && strpos($info,$error)===false) ? ' '.$error : '';
-    $info = date("Y-m-d, H:d:s")." ".str_replace(dirname(SYS).'/','',$info);
-
-    if (cfg('debug_threshold')===2 && empty($Love->is_ajax)){
-        //highlight_string
-        echo preg_replace(array("/=>&nbsp;&nbsp;'([^']*)'/","/'([^']*)'/"),array("<span style=\"color:#2b\">=>&nbsp;&nbsp;</span>'<span style=\"color:#c22\">\$1</span>'","'<span style='color:#09b'>\$1</span>'"), stripslashes(nl2br(str_replace(" ","&nbsp;&nbsp;",$info.PHP_EOL.str_pad('',168,'-').PHP_EOL))));//HTML友好输出
-    }
-
-    isset($Love) || $Love->error=array();
-    $Love->error[] = $info = str_replace(array(PHP_EOL,'  '),array('',''),$info).PHP_EOL;;
+    $clicls = cfg('clicls');
     $dir = cfg('log_path').date('Ymd').'/';
     is_dir($dir) || mkdir($dir,0777,true);
-    file_put_contents($dir.cfg('log_file_tracy'),$info,FILE_APPEND);
+    $log = $dir.cfg('log_file_tracy');
+    $seg = $clicls['none'].'| ';
+
+    if ($Love->errno%20==1){
+        $thead = sprintf("☕ ".str_repeat(' - ',35)."\n");
+        $title = array(sprintf("%-9s",'TIME'),sprintf("%-9s","PROC ms"),sprintf("%s",'☼ '),sprintf("%-18s","CALL"),sprintf("%-44s","FILE"),sprintf("%s",'ARGS'));
+        foreach($title as $h){
+            $thead .= $seg.$clicls['purple'].$h;//☱☳☴☰☵
+        }
+        file_put_contents($log,$thead.PHP_EOL,FILE_APPEND);
+    }
+
+    isset($info['time']) || $info['time']=date('H:i:s');
+    $info['erro'] = empty($info['erro']) ? '':(($error=get_last_error()) && strpos($info['erro'],$error)===false) ? $info['erro'].' '.$error : $info['erro'];
+    $info['file']['file'] = empty($info['file']['file']) ?'': str_replace(dirname(SYS).'/','',$info['file']['file']);
+
+    $tbody = sprintf("%-22s", $seg.$clicls['green'].$info['time']);
+    $tbody .= sprintf("%-24s", $seg.$clicls['red'].$info['proc']);
+    $tbody .= sprintf("%-2s", $seg.$clicls['cyan'].$info['info']);
+    $tbody .= sprintf('%-31s', $seg.$clicls['blue'].$info['call']);
+    empty($info['file']['file']) || $tbody .= sprintf("%-57s", $seg.$clicls['yellow']."in {$info['file']['file']} on line {$info['file']['line']}");
+    empty($info['args']) || $tbody .= sprintf('%-100s', $seg.$clicls['blue'].str_replace(array(PHP_EOL,'  '),array('',''),$info['args']));
+    empty($info['erro']) || $tbody .= sprintf('%s', $seg.$clicls['red'].str_replace(array(PHP_EOL,'  '),array('',''),$info['erro']));
+    file_put_contents($log,$tbody.PHP_EOL,FILE_APPEND);
+
+    if (cfg('debug_threshold')===2 && empty($Love->is_ajax)){
+        echo preg_replace(array("/=>&nbsp;&nbsp;'([^']*)'/","/'([^']*)'/"),array("<span style=\"color:#2b\">=>&nbsp;&nbsp;</span>'<span style=\"color:#c22\">\$1</span>'","'<span style='color:#09b'>\$1</span>'"), stripslashes(nl2br(str_replace(" ","&nbsp;&nbsp;", ($info['time'].' '.$info['proc'].' '.$info['info'].' '.$info['call'].' in '.$info['file']['file'].' on line '.$info['file']['line'].' '.$info['args'].' '.$info['erro']).PHP_EOL.str_pad('',168,'-').PHP_EOL))));//HTML友好输出 //highlight_string
+    }
 }
 
 
@@ -459,9 +481,6 @@ function router($request_uri=null){
 
             "domain.com/a-b-c/d-e-f?x=y"  => "ajax",
         );
-    }
-    if (strpos($request_uri,'/')===false){
-        call('exit', array('Bad Request',$request_uri));
     }
 
     $Love->url = ($request_uri = $request_uri ? $request_uri : $_SERVER['REQUEST_URI']); 
@@ -536,12 +555,47 @@ function send_header($code){
 
 /** 
 * ------------------------------------------
+* performance
+* ------------------------------------------
+*/
+function s(){
+    global $microtime;
+    $microtime = microtime(true);
+}
+
+function ms($i=0,$l=7){
+    if ($i==0){
+        global $microtime;
+        if (empty($microtime)){
+            global $Love;
+            $microtime = $Love->proctime;
+        }
+    }else{
+        global $Love;
+        $microtime = $i==1 ? $Love->proctime : $Love->time;
+    }
+
+    $ms = (round(microtime(true)-$microtime,$l)*1000);
+    $microtime = microtime(true);
+    return $ms;
+}
+
+
+/** 
+* ------------------------------------------
 * view
 * ------------------------------------------
 *
 * $Love->js = $Love->css = array( 'top' => array(), 'mid' => array(),  'low' => array());
 *
 */
+function css($css,$pos='top'){
+    global $Love;
+
+    in_array($pos,array('top','mid','low','G')) || call('exit',array('UnFound Pos',$pos));
+    is_array($css) || $css=array($css);
+    foreach($css as $v) $Love->css[$pos][]=$v;
+}
 function js($js,$pos='low'){
     global $Love;
 
@@ -554,13 +608,6 @@ function js($js,$pos='low'){
             $Love->js[$pos][]=$v;
         }
     }
-}
-function css($css,$pos='top'){
-    global $Love;
-
-    in_array($pos,array('top','mid','low','G')) || call('exit',array('UnFound Pos',$pos));
-    is_array($css) || $css=array($css);
-    foreach($css as $v) $Love->css[$pos][]=$v;
 }
 function html($file='',$data=array(),$return=false){
     global $Love;
@@ -632,3 +679,5 @@ function html($file='',$data=array(),$return=false){
         }
     }
 }
+
+
