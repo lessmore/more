@@ -109,15 +109,16 @@ function client(){
     //Call('send_header', array(503));
     //Ed
 
-    //通过Url打开debug //防止链接被记录,每10分钟的密钥变一次,如：ladybug=323451749823432432, 17498-05153(5日15点3x分)==12345
-    if (isset($_GET['ladybug']) && (substr($_GET['ladybug'],5,5)-substr(date('jHi'),0,5))==12345){
-        cfg('debug_threshold', 2);
-        call('tracy',array('info'=>'☢ Debug opened by url query string'));
-    }
-
     /*
     - $Love defalut initialize -------------------- Here */
     global $Love;
+
+    //通过Url打开debug //防止链接被记录,每10分钟的密钥变一次,如：ladybug=323451749823432432, 17498-05153(5日15点3x分)==12345
+    if (isset($_GET['ladybug']) && (substr($_GET['ladybug'],5,5)-substr(date('jHi'),0,5))==12345){
+        cfg('debug_threshold', 2);
+        call('tracy', array('info'=>'☢ Debug opened by url query string'));
+        $Love->url_prepend = array('ladybug' => $_GET['ladybug']);
+    }
 
     $Love->cwd = getcwd();
     $Love->user_ip = $user_ip;
@@ -568,11 +569,11 @@ function ms($i=0,$l=7){
         global $microtime;
         if (empty($microtime)){
             global $Love;
-            $microtime = $Love->proctime;
+            $microtime = $Love->ptime;
         }
     }else{
         global $Love;
-        $microtime = $i==1 ? $Love->proctime : $Love->time;
+        $microtime = $i==1 ? $Love->ptime : $Love->time;
     }
 
     $ms = (round(microtime(true)-$microtime,$l)*1000);

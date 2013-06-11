@@ -152,9 +152,10 @@ function mark($info,$file){
 * //$port = (empty($_SERVER["SERVER_PORT"]) or $_SERVER['SERVER_PORT']==80) ? '' : ':'.$_SERVER["SERVER_PORT"];
 * //$url = $protocol.'://'.$_SERVER['HTTP_HOST'].$port.$_SERVER["REQUEST_URI"];
 * //#anchor client-only not sent to server
-* 
+* @append  附加
+* @subtract 减
 */
-function url($url='',$url_options=array('subtract'=>array(),'prepend'=>array(),'append'=>array(),'domain'=>'')){
+function url($url='',$url_options=array('subtract'=>array(),'append'=>array(),'domain'=>'')){
     $url = '';
     $query = array();
     $query_subtract = empty($query_options['subtract']) ? '':$query_options['subtract'];
@@ -174,16 +175,22 @@ function url($url='',$url_options=array('subtract'=>array(),'prepend'=>array(),'
         $query[] = http_build_query($query_append);
     }
 
-    //
-    $query_prepend_map = array();
-    array_unshift((array)$query_prepend, array(cfg('debug_name')));
-    foreach ($query_prepend as $k => $v){
-        if ($value=env($v)){
-            $query_prepend_map[$v] = urlencode($value);
+    //预置 , 如ladybug
+    global $Love;
+    if (!empty($Love->url_prepend)){
+        foreach ($query_prepend as $k => $v){
+            if (is_string($k)){
+                if ($val=env($k)){
+                    $v = $val;
+                }
+                $query_prepend[$k] = urlencode($v);
+            }else{
+                unset($query_prepend[$k];
+            }
         }
-    }
-    if (!empty($query_prepend_map)){
-        $qeury[] = http_build_query($query_prepend_map);
+        if (!empty($query_prepend)){
+            $qeury[] = http_build_query($query_prepend);
+        }
     }
 
     //

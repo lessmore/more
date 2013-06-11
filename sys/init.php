@@ -24,7 +24,7 @@ define('SYS', __DIR__.'/');//dirname(__FILE__);//php 5.3-- //set_magic_quotes_ru
 
 $Love = (object) array(//定义一个全局对象变量(业务上约定以_开头来定义)
     'time' => $_SERVER['REQUEST_TIME'],//web server accept request
-    'proctime' => microtime(true),//here now
+    'ptime' => microtime(true),//php here now
 );
 
 error_reporting(0);
