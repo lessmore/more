@@ -54,15 +54,16 @@ function __autoload($class_name) {
 */
 function Perfume(){
     //调制(默认)
-    call('reg', array('top','client'));
-    call('reg', array('mid','router'));
-    call('reg', array('low','html'));
+    reg('top','client');
+    reg('mid','router');
+    reg('low','html');
 
     //前调'中调'尾调
-    call('reg', array('top'));
-    call('reg', array('mid'));
-    call('reg', array('low'));
+    call('reg',array('top'));
+    call('reg',array('mid'));
+    call('reg',array('low'));
 
+    //quit
     register_shutdown_function('tracy',array('info' => '☊ ','call' => 'php time','proc' => '↻ '.ms(1)));
     register_shutdown_function('tracy',array('info' => '☊ ','call' => 'web time','proc' => '↻ '.ms(2,5)));
 }
@@ -82,9 +83,8 @@ function client(){
     $is_cli = (PHP_SAPI=='cli');
 
     //Client Fileter ----
-    if (!$is_cli && (empty($_SERVER['HTTP_USER_AGENT']) || empty($_SERVER['HTTP_ACCEPT']))
-        ) {//|| $_COOKIE['_domainvid=']    cookie有问题？
-        call('send_header', array(404));
+    if (!$is_cli && (empty($_SERVER['HTTP_USER_AGENT']) || empty($_SERVER['HTTP_ACCEPT']))) {//|| $_COOKIE['_domainvid=']    cookie有问题？
+        call('send_header', array(404,'invalid agent'));
     }
 
     //IP Addr
@@ -99,7 +99,7 @@ function client(){
     }
 
     if (!cfg('dev') && preg_match('/^(192\.168|10|127\.(0|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31))\./', $user_ip)) {
-        call('send_header', array(404));//(非开发模式下)内网或伪造成内网IP的用户, 127实际只有0,16-31
+        call('send_header', array(404,'invalid ip address'));//(非开发模式下)内网或伪造成内网IP的用户, 127实际只有0,16-31
     }//Ed
 
     //Spider
@@ -279,6 +279,12 @@ function env($key,$type='gpc',array $options=array('default'=>null,'value'=>null
 *
 * @param string $func_name 调用代码 4种组合 array($obj,'method') | array('class','method') | 'class::method',array($this,'self::dior') | function
 * @param array [args] 传递给方法的参数列表
+*
+* | TIME     | PROC ms  | ☼ | CALL              | FILE                                        | ARGS
+* | 10:45:43 | ⇡ 3.2508 | ☀ | reg               | in sys/inc/func.init.php on line 62         | array (0 => 'top',)
+* | 10:45:43 | ⇡ 0.3011 | ☀ | client            | in sys/inc/func.init.php on line 177        | array ()
+*
+*  TIME -> 当前call时的time，PROC 上个call执行调用函数到下一个call调用执行前经过的时间, call 调用的对象，file调用位置，args 传入的参数
 */
 function call($func_name, $func_args=array()){
     try{
@@ -525,7 +531,13 @@ function router($request_uri=null){
 * @param int $code HTTP
 * @see http_response_code() >=php5.4
 */
-function send_header($code){
+function send_header(){
+    $args = func_get_args();
+    if (empty($args[0])){
+        call('exit', array('invalid send_header params','param'=>$args));
+    }
+
+    $code = $args[0];
     $http_code = array(
         204 => 'No Content',        //无言以对
         301 => 'Moved Permanently', //永久性转移到另一个地址
@@ -548,9 +560,12 @@ function send_header($code){
         header('HTTP/1.1 '.$code.' '.$http_code[$code], true, $code);
     }
 
-    $params = in_array($code,array(204,400,403,404,500,502,503,504)) ? array($code.' '.$http_code[$code], $_SERVER) : array($code); //把问题客户端特征保存下来，主要的MD5，避免多次保存
+    $args = array($code.' '.$http_code[$code])+$args;
+    if (in_array($code,array(204,400,403,404,500,502,503,504))){
+        $args = array($code.' '.$http_code[$code], $_SERVER);//问题客户端特征保存下来
+    }
 
-    call('exit',$params);
+    call('exit', $args);
 }
 
 
@@ -620,65 +635,64 @@ function html($file='',$data=array(),$return=false){
         is_file($file=$Love->cwd.'/v/'.$file) || call('exit',array('UnFound File '.$file));
 
         if ($return){
-            //$data['JS'] = $data['CSS'] = array('top'=>'','mid'=>'','low'=>'','G'=>''); 
             extract($data);
             return include $file;
         }
 
         isset($Love->html) || $Love->html=array();
-        $Love->html[] = array('file' => $file,'data'=>$data);
-    }else{
-        if (!empty($Love->is_ajax)){
-            return ;
-        }
+        $Love->html[] = array('file' => $file,'data' => $data);
+        return true;//register
+    }
 
-        $data['JS'] = $data['CSS'] = array('top'=>'','mid'=>'','low'=>'','G'=>''); 
+    //push html
+    if (!empty($Love->is_ajax)){
+        return ;
+    }
 
-        if (array_filter($Love->js,'count')){
-            krsort($Love->js);
-            foreach($Love->js as $k => $v){
-                if ($k == 'G'){
-                    if ($v){
-                        $data['JS']['top'] .= '<script type="text/javascript">'."\nvar G=".json_encode($v).";\n</script>\n";
-                    }
-                } else if ($v && is_array($v)){
-                    foreach($v as $js){
-                        cfg('dev') && $js.='?a='.uniqid();
-                        $data['JS'][$k] .= '<script type="text/javascript" src="'.$pub_domain.'js/'.$js."\"></script>\n";
-                    }
+    $data['JS'] = $data['CSS'] = array('top'=>'','mid'=>'','low'=>'','G'=>''); 
+
+    if (array_filter($Love->js,'count')){
+        krsort($Love->js);
+        foreach($Love->js as $k => $v){
+            if ($k == 'G'){
+                if ($v){
+                    $data['JS']['top'] .= '<script type="text/javascript">'."\nvar G=".json_encode($v).";\n</script>\n";
+                }
+            } else if ($v && is_array($v)){
+                foreach($v as $js){
+                    cfg('dev') && $js.='?a='.uniqid();
+                    $data['JS'][$k] .= '<script type="text/javascript" src="'.$pub_domain.'js/'.$js."\"></script>\n";
                 }
             }
-            $Love->js = $Love->default_js;
         }
+        $Love->js = $Love->default_js;
+    }
 
-        if (array_filter($Love->css,'count')){
-            krsort($Love->css);
-            foreach($Love->css as $k => $v){
-                if ($k == 'G'){
-                    if ($v){
-                        foreach($v as $css){
-                            $data['CSS']['top'] .= "<style type=\"text/css\">\n".$css."\n</style>\n";
-                        }
-                    }
-                } else if ($v && is_array($v)){
+    if (array_filter($Love->css,'count')){
+        krsort($Love->css);
+        foreach($Love->css as $k => $v){
+            if ($k == 'G'){
+                if ($v){
                     foreach($v as $css){
-                        cfg('dev') && $css.='?a='.uniqid();
-                        $data['CSS'][$k] .= '<link rel="stylesheet" type="text/css" href="'.$pub_domain.'css/'.$css."\" />\n";
+                        $data['CSS']['top'] .= "<style type=\"text/css\">\n".$css."\n</style>\n";
                     }
-
                 }
-            }
-            $Love->js = $Love->default_css;
-        }
-        extract($data);
+            } else if ($v && is_array($v)){
+                foreach($v as $css){
+                    cfg('dev') && $css.='?a='.uniqid();
+                    $data['CSS'][$k] .= '<link rel="stylesheet" type="text/css" href="'.$pub_domain.'css/'.$css."\" />\n";
+                }
 
-        if (isset($Love->html)){
-            foreach($Love->html as $k => $v){
-                extract($v['data']);
-                include $v['file'];
             }
+        }
+        $Love->js = $Love->default_css;
+    }
+    extract($data);
+
+    if (isset($Love->html)){
+        foreach($Love->html as $k => $v){
+            extract($v['data']);
+            include $v['file'];
         }
     }
 }
-
-
