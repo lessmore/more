@@ -15,8 +15,7 @@ class Cache {
      * @access public
      * @return Typecho_Response
      */
-    public static function Instance()
-    {
+    public static function Instance() {
         if (null === self::$_instance) {
             self::$_instance = new __CLASS__;
         }
@@ -24,31 +23,30 @@ class Cache {
         return self::$_instance;
     }
 
-    //在适当的地方设置enable($option=array('read'=>false,'write'=>true'),你懂的,缓存重建
-    public static function enable($options = array('read'=>true,'write'=>true)){
+    //在适当的地方设置enable($option=array('read'=>false,'write'=>true'),不用缓存且重新生成缓存
+    public static function enable($options = array('read'=>true,'write'=>true)) {
         self::$read = empty($options['read']) ? false : true;
         self::$write = empty($options['write']) ? false : true;
-    };
+    }
 
 
-
-    public static function get($key, $lock=0){
+    public static function get($key){
         if (!self::$read){//开发TDD
             tdd("Cache Disabled, the key $key has get nothing");
             return false;
         }
         
-        if ($val = $cache->get($key)){
+        if (($val=$cache->get($key))!==false){
             return $val;//取到缓存
         }
 
         //如果取不到缓存，进入锁控制;锁控制-在密集访问时，如果缓存过期，这时有1000个请求同时去执行创建新缓存的过程，而这个缓存刚好又是个计算量比较大，对数据库有压力的操作,会因为这1000个请求把负载增大，且阻塞了大量其它的请求，轻的影响，一段时间网页变慢，重的影响，宕机，拒绝服务。锁控制，让重建缓存限制由1或几人来触发
-        if ($val===false && $lock){
+        if ($val===false && $lock=true){
 
             $key_lock = $key.'_locker';//分布式锁
             if ($cache->get($key_lock)===false){//缓存过期后，第一个被访问，创建锁的人，肩负计算重建缓存的任务
                 $cache->set($key_lock,'locking',10);//10s,意味缓存在未成功创建且被成功获取时,所有其它被阻塞的请求最终在下面的重试中跳转服务异常页面.
-                return false;
+                return false;//由set来重建缓存
             }
 
             static $locks = array();//只会在第一次执行时赋值array()
@@ -59,7 +57,7 @@ class Cache {
             
             usleep(300000);//300ms
             if ($locks[$key]--){
-                return self::get($key, $lock);
+                return self::get($key);
             }
 
             response(503);//3次*300ms后还是取不到缓存，为了避免给数据端无谓压力造成down机，放弃提供服务，直接页面503，或定制的跳转

@@ -159,7 +159,6 @@ function url($url='',$url_options=array('subtract'=>array(),'append'=>array(),'d
     $url = '';
     $query = array();
     $query_subtract = empty($query_options['subtract']) ? '':$query_options['subtract'];
-    $query_prepend = empty($query_options['prepend']) ? '':$query_options['prepend'];
     $query_append = empty($query_options['append']) ? '':$query_options['append'];
     $domain = empty($query_options['domain']) ? '':$query_options['domain'];
 
@@ -175,18 +174,21 @@ function url($url='',$url_options=array('subtract'=>array(),'append'=>array(),'d
         $query[] = http_build_query($query_append);
     }
 
-    //预置 , 如ladybug
+    //预置, 如Ladybug
     global $Love;
     if (!empty($Love->url_prepend)){
-        foreach ($query_prepend as $k => $v){
+        foreach ($Love->url_prepend as $k => $v){
             if (is_string($k)){
-                if ($val=env($k)){
-                    $v = $val;
-                }
                 $query_prepend[$k] = urlencode($v);
-            }else{
-                unset($query_prepend[$k];
+            }else if (is_string($v)){
+                if (($val=env($v))!==false){
+                    $query_prepend[$v] = urlencode($val);
+                }else{
+                    unset($query_prepend[$k]);
+                }
             }
+
+            unset($query_prepend[$k]);
         }
         if (!empty($query_prepend)){
             $qeury[] = http_build_query($query_prepend);
@@ -387,22 +389,25 @@ function is_email($str) {
 * @param string grep=keyword,keyword |[all -> show all]
 */
 function show_inc_file(){
-    $base = dirname(getcwd()); 
+    $base = dirname(getcwd());
     $sofa = get_included_files();
     $default_show = array('view');
-    $greps = array_unique(array_merge($default_show,(array)explode(',',env('grep'))));
+    $greps = array_unique(array_merge($default_show,(array)explode(',',request('grep'))));
+    $output = "<div style='font-size:14px'>";
 
-    foreach($sofa as $v){
-        if (in_array('all',$greps)){
-            echo str_replace($base.'/','',$v)."<br>\n";
+    foreach($sofa as $k => $v){
+        if (in_array('none',$greps)){
+            $output .= ($k+1)."|&nbsp;&nbsp;".str_replace($base.'/','',$v).PHP_EOL;
         }else{
             foreach($greps as $vv){
                 if ($vv and stripos($v,$vv)){
-                    echo str_replace($base.'/','',$v)."<br>\n";
-                } 
+                    $output .= ($k+1)."|&nbsp;&nbsp;".str_replace($base.'/','',$v).PHP_EOL;
+                }
             }
         }
     }
+
+    echo nl2br($output."</div>");
 }
 
 
@@ -621,32 +626,7 @@ private static function checkXML($xmlfile){
 
 
 
-$time_start = microtime_float();
-function memory_usage() {
-    $memory  = ( ! function_exists('memory_get_usage')) ? '0' : round(memory_get_usage()/1024/1024, 2).'MB';
-    return $memory;
-}
-function microtime_float() {
-    $mtime = microtime();
-    $mtime = explode(' ', $mtime);
-    return $mtime[1] + $mtime[0];
-}
 
-
-// 根据不同系统取得CPU相关信息
-switch(PHP_OS) {
-    case "Linux":
-        $sysReShow = (false !== ($sysInfo = sys_linux()))?"show":"none";
-        break;
-    case "FreeBSD":
-        $sysReShow = (false !== ($sysInfo = sys_freebsd()))?"show":"none";
-        break;
-    case "WINNT":
-        $sysReShow = (false !== ($sysInfo = sys_windows()))?"show":"none";
-        break;
-    default:
-        break;
-}
 
 //linux系统探测
 function sys_linux()
@@ -740,7 +720,9 @@ function bar($percent) {
 }
 
 function myip(){
-    gethostbyname($_SERVER['SERVER_NAME'])
+    //gethostbyname($_SERVER['SERVER_NAME']);
+    //gethostbyname(gethostname());
+    //gethostbyname(php_uname('n'));
 }
 
 
@@ -764,27 +746,40 @@ NT
 PHP 5 可以使用类型约束。函数的参数可以指定只能为对象（在函数原型里面指定类的名字），php 5.1 之后也可以指定只能为数组。 
 注意，即使使用了类型约束，如果使用NULL作为参数的默认值，那么在调用函数的时候依然可以使用NULL作为实参
 */
-function array_cols(array $value, $key, $key_new='') {    
+/**
+ * 返回2维数组的第n列的集合, 第三个参数可以指代用哪个行的唯一标识值来接这个列的值
+ *
+ * @param $value  array(array());
+ * @param $key mixed number index/string index
+ * @param $key_new mixed number index/string index
+ */
+function array_cols(array $value,$key,$key_new=null) {    
     $cols = array();
 
-    if ($value) {
-        if ($key_new){
-            foreach ($value as $v) {
-                if (!isset($v[$key]))) {
-                    continue;
-                }
+    if (empty($value)){
+        return $cols;
+    }
 
-                if ($key_new && isset($v[$key_new])){
-                    $cols[$v[$key_new]] = $v[$key];
-                }else{
-                    $cols[] = $v[$key];
-                }
-            }    
-        }
-    }    
+    if ($key_new){
+        foreach ($value as $v) {
+            if (!isset($v[$key]) or !isset($v[$key_new]))) {
+                continue;
+            }
+
+            $cols[$v[$key_new]] = $v[$key];
+        }    
+    }else{
+        foreach ($value as $v) {
+            if (!isset($v[$key])) {
+                continue;
+            }
+
+            $cols[] = $v[$key];
+        }    
+    }
 
     return $cols;
-}  
+} 
 
 
 
@@ -825,9 +820,9 @@ function cutstr($str,$length,$more="..."){
     }
 
     if ($more){
-        return mb_substr($str,$length-3,CHARSET).$more;
+        return mb_substr($str,$length-3,cfg('charset')).$more;
     }else{
-        return mb_substr($str,$length,CHARSET);
+        return mb_substr($str,$length,cfg('charset'));
     }
 }
 
@@ -853,7 +848,6 @@ function async($command,array $args=array(), array $callback=array('shell'=>'','
 }
 
 
-
 function pro_start(){
     //$time = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];//@PHP 5.4
     define('START_MEMORY', memory_get_usage());
@@ -873,7 +867,6 @@ function pro_end(){
     include_once $XHPROF_ROOT . "/xhprof_runs.php";
 
     $xhprof_runs = new XHProfRuns_Default();
-    // Save the run under a namespace "xhprof_foo".
     $run_id = $xhprof_runs->save_run($xhprof_data, "test");
     echo "http://www.xx.com/xhprof/xhprof_html/index.php?run={$run_id}&source=identify";
 } 

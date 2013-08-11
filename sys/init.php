@@ -15,16 +15,16 @@
 |
 | @author Less
 | @copyright 囧不來電有限公司
-| @require PHP 5.3
+| @require PHP 5.3+
 */
 header('Content-type:text/html; Charset=UTF-8');
 
 define('LADY', 'Miss You Much');
-define('SYS', __DIR__.'/');//dirname(__FILE__);//php 5.3-- //set_magic_quotes_runtime(false);//php 5.3 --
+define('SYS', __DIR__.'/');
 
-$Love = (object) array(//定义一个全局对象变量(业务上约定以_开头来定义)
+$Love = (object) array(//定义一个全局对象变量(业务上约定以_开头来添加新成员)
     'time' => $_SERVER['REQUEST_TIME'],//web server accept request
-    'ptime' => microtime(true),//php here now
+    'ptime' => microtime(true),//php here run now
 );
 
 error_reporting(0);
@@ -38,15 +38,15 @@ require SYS.'inc/func.init.php';
 
 
 /*
- ---------------------------------------------------------------------------------
-|
-|           USAGE
-|
- -----------------------------------------------
++----------------------------------------------+
+||                                             |
+|| USAGE    --------------------------         |
+||                                             |
+++---------------------------------------------+
 
- --------------------------
++--------------------------+
 | in your public index.php |
- --------------------------
++--------------------------+
 require_once path.'/../../sys/init.php';
 
 //open dev mode
@@ -65,24 +65,23 @@ cfg('dev',true);
 
 Perfume();
 
- --------------------------
-| in your index.php action |
- --------------------------
++---------------------------+
+| in your controller action |
++---------------------------+
 class c_index{
     //default controller
     public function index(){
         cfg('debug_threshold',0);
         cfg('dev',false);
 
-        //echo 'You have a 木木夕';
         call('css',array(array('huacha/style.css','huacha/home.css')));
         call('css',array('#abc {display:none}','G'));
         call('js', array('huacha/style.js'));
         call('js', array(array('s'=>$_SERVER),'G'));
 
         $data = array('test' => 'abc');
-        $data['header'] = call('html',array('index.html',array(),1));
-        $data['footer'] = call('html',array('index.html',array(),1));
+        $data['header'] = call('html',array('index.html',array(),$return=true));
+        $data['footer'] = call('html',array('index.html',array(),$return=true));
         call('html', array('index.html',$data));
     }
 

@@ -114,7 +114,7 @@ function client(){
     global $Love;
 
     //通过Url打开debug //防止链接被记录,每10分钟的密钥变一次,如：ladybug=323451749823432432, 17498-05153(5日15点3x分)==12345
-    if (isset($_GET['ladybug']) && (substr($_GET['ladybug'],5,5)-substr(date('jHi'),0,5))==12345){
+    if (isset($_GET['ladybug']) && (substr($_GET['ladybug'],5,5)-substr(date('dHi'),0,5))==12345){
         cfg('debug_threshold', 2);
         call('tracy', array('info'=>'☢ Debug opened by url query string'));
         $Love->url_prepend = array('ladybug' => $_GET['ladybug']);
@@ -130,7 +130,7 @@ function client(){
 
     //触发点设定(抽样
     $Love->sample_s_1_60 = !$Love->time%60;
-    $Love->sample_r_1_1000 = rand(1,1000)%999;//Ed
+    $Love->sample_r_1_1000 = !rand(1,1000)%999;//Ed
 
     //html display
     $Love->js = $Love->css = $Love->default_js = $Love->default_css = array('top'=>array(), 'mid'=>array(), 'low'=>array(), 'G'=>array());
@@ -379,7 +379,9 @@ function call($func_name, $func_args=array()){
 
     cfg('dev') || exit;
 }
-
+function tdd($log){
+    call('tracy',array('info'=> $log));
+}
 
 
 /*
@@ -394,6 +396,8 @@ function call($func_name, $func_args=array()){
 function Tracy($info){
     global $Love;
     $Love->errno++;
+
+    is_array($info) || $info = array('info' => $info);
 
     $clicls = cfg('clicls');
     $dir = cfg('log_path').date('Ymd').'/';
@@ -531,13 +535,11 @@ function router($request_uri=null){
 * @param int $code HTTP
 * @see http_response_code() >=php5.4
 */
-function send_header(){
-    $args = func_get_args();
-    if (empty($args[0])){
+function send_header($code,$msg='',$args=array()){
+    if (empty($code)){
         call('exit', array('invalid send_header params','param'=>$args));
     }
 
-    $code = $args[0];
     $http_code = array(
         204 => 'No Content',        //无言以对
         301 => 'Moved Permanently', //永久性转移到另一个地址
@@ -556,13 +558,13 @@ function send_header(){
         504 => 'Gateway Timeout'
     );
 
-    if (isset($http_code[$code])){
-        header('HTTP/1.1 '.$code.' '.$http_code[$code], true, $code);
-    }
+    $msg = isset($http_code[$code]) ? $http_code[$code] : '';
 
-    $args = array($code.' '.$http_code[$code])+$args;
+    header('HTTP/1.1 '.$code.' '.$msg, true, $code);
+    $args = array($code.' '.$msg)+$args;
+
     if (in_array($code,array(204,400,403,404,500,502,503,504))){
-        $args = array($code.' '.$http_code[$code], $_SERVER);//问题客户端特征保存下来
+        $args[] = $_SERVER;//问题客户端特征保存下来
     }
 
     call('exit', $args);
